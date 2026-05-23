@@ -104,26 +104,28 @@ export function ClipsPane({
     <aside className="flex min-h-[40vh] flex-col border-l border-border bg-card/60 backdrop-blur xl:min-h-screen">
       <header className="flex min-h-16 items-center justify-between border-b border-border px-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
             Output
           </p>
-          <h2 className="font-semibold text-foreground">Clips Pane</h2>
+          <h2 className="font-display text-base font-bold uppercase tracking-tight text-foreground">
+            Render Bin
+          </h2>
         </div>
-        <Badge tone="neutral">{clips.length}</Badge>
+        <Badge tone="neutral">{String(clips.length).padStart(2, "0")}</Badge>
       </header>
 
       <div className="flex-1 overflow-y-auto p-3">
         {error ? (
-          <p className="mb-3 animate-fade-in rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          <p className="mb-3 animate-fade-in rounded-md border border-destructive/35 bg-destructive/10 p-3 font-mono text-xs text-destructive">
             {error}
           </p>
         ) : null}
 
         {clips.length === 0 ? (
-          <div className="grid min-h-64 place-items-center rounded-xl border border-dashed border-border p-6 text-center">
+          <div className="reg-frame relative grid min-h-64 place-items-center rounded-lg border border-dashed border-border p-6 text-center">
             <p className="max-w-56 text-sm leading-6 text-muted-foreground">
-              Generated clips appear here with preview, rename, delete, and
-              download actions.
+              Rendered clips land here — preview, rename, download, or delete each
+              one.
             </p>
           </div>
         ) : (
@@ -138,8 +140,9 @@ export function ClipsPane({
               return (
                 <article
                   key={clip.id}
-                  className="group animate-fade-in-up rounded-xl border border-border bg-card-2 p-3 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow"
+                  className="group relative animate-fade-in-up overflow-hidden rounded-lg border border-border bg-card-2 p-3 transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-glow"
                 >
+                  <span className="pointer-events-none absolute inset-y-0 left-0 w-0.5 bg-primary/0 transition group-hover:bg-primary/70" />
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       {isEditing ? (
@@ -153,13 +156,13 @@ export function ClipsPane({
                           }}
                         />
                       ) : (
-                        <h3 className="truncate font-semibold text-foreground">
+                        <h3 className="truncate font-display text-sm font-bold uppercase tracking-tight text-foreground">
                           {clip.title}
                         </h3>
                       )}
-                      <p className="mt-1 font-mono text-xs tabular-nums text-muted-foreground">
-                        {formatTime(clip.startTime)} - {formatTime(clip.endTime)}
-                        {"  "}|{"  "}
+                      <p className="mt-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                        {formatTime(clip.startTime)}–{formatTime(clip.endTime)}
+                        {"  ·  "}
                         {formatDuration(clip.duration)}
                       </p>
                     </div>
@@ -264,15 +267,18 @@ export function ClipsPane({
             }
           }}
         >
-          <div className="w-full max-w-3xl animate-scale-in rounded-xl border border-border bg-card p-4 shadow-panel">
+          <div className="reg-frame relative w-full max-w-3xl animate-scale-in rounded-lg border border-border bg-card p-4 shadow-panel">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="truncate text-lg font-semibold tracking-tight">
+                <p className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-primary">
+                  <span className="h-1.5 w-1.5 animate-rec-pulse rounded-full bg-primary" />
+                  Preview
+                </p>
+                <h3 className="truncate font-display text-lg font-bold uppercase tracking-tight">
                   {previewClip.title}
                 </h3>
-                <p className="font-mono text-sm tabular-nums text-muted-foreground">
-                  {formatTime(previewClip.startTime)} -{" "}
-                  {formatTime(previewClip.endTime)}
+                <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
+                  {formatTime(previewClip.startTime)} – {formatTime(previewClip.endTime)}
                 </p>
               </div>
               <Button

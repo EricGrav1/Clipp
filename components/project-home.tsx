@@ -1,6 +1,6 @@
 "use client";
 
-import { Film, FolderPlus, Scissors, Sparkles } from "lucide-react";
+import { Film, FolderPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -56,25 +56,44 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
 
   return (
     <main className="min-h-screen px-5 py-6 sm:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <div className="flex justify-end">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8">
+        {/* Edit-bay top rail */}
+        <div className="flex animate-fade-in items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-2.5 w-2.5 animate-rec-pulse place-items-center rounded-full bg-primary" />
+            <span className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-foreground/80">
+              Clipper Studio
+            </span>
+            <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
+              / Edit Bay
+            </span>
+          </div>
           <ThemeToggle />
         </div>
-        <header className="flex animate-fade-in-up flex-col gap-5 border-b border-border pb-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              <Scissors className="h-3.5 w-3.5 text-primary" />
-              Clipper Studio
-            </div>
-            <h1 className="max-w-3xl bg-gradient-to-br from-foreground to-foreground/55 bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-6xl">
-              Projects built for fast clip extraction.
+
+        <header className="flex animate-fade-in-up flex-col gap-7 border-b border-border pb-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="mb-3 font-mono text-xs uppercase tracking-[0.28em] text-primary">
+              [ Projects ]
+            </p>
+            <h1 className="font-display text-4xl font-extrabold uppercase leading-[0.95] tracking-tight text-foreground sm:text-6xl">
+              Cut the take.
+              <br />
+              <span className="text-primary">Render</span> the clip.
             </h1>
+            <p className="mt-4 max-w-md text-sm leading-6 text-muted-foreground">
+              One source video per project. Mark a precise in-point, set a
+              duration, and render. No timelines to babysit.
+            </p>
           </div>
-          <div className="w-full max-w-xl rounded-xl border border-border bg-card/80 p-3 shadow-panel backdrop-blur">
+          <div className="w-full max-w-md rounded-lg border border-border bg-card/80 p-3 shadow-panel backdrop-blur reg-frame relative">
+            <p className="mb-2 px-1 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+              New project
+            </p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 aria-label="Project name"
-                placeholder="Project name"
+                placeholder="Untitled reel"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 onKeyDown={(event) => {
@@ -90,11 +109,11 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
                 className="shrink-0"
               >
                 <FolderPlus className="h-4 w-4" />
-                {isCreating ? "Creating" : "New Project"}
+                {isCreating ? "Creating" : "Create"}
               </Button>
             </div>
             {error ? (
-              <p className="mt-2 animate-fade-in text-sm text-destructive">
+              <p className="mt-2 animate-fade-in font-mono text-xs text-destructive">
                 {error}
               </p>
             ) : null}
@@ -102,17 +121,17 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
         </header>
 
         {projects.length === 0 ? (
-          <section className="grid min-h-[420px] animate-fade-in place-items-center rounded-xl border border-dashed border-border bg-card/50 text-center">
+          <section className="reg-frame relative grid min-h-[420px] animate-fade-in place-items-center rounded-lg border border-dashed border-border bg-card/40 text-center">
             <div className="max-w-md px-6">
-              <div className="mx-auto mb-4 grid h-16 w-16 animate-float place-items-center rounded-2xl bg-brand-soft">
-                <Sparkles className="h-8 w-8 text-accent" />
+              <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-lg border border-primary/30 bg-brand-soft shadow-lamp">
+                <Film className="h-7 w-7 text-primary" />
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                Start with a project.
+              <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">
+                No reels yet
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Upload one source video, pick precise durations, and render clips
-                into a reusable project workspace.
+                Spin up a project, drop in a source video, and start pulling
+                clips into a reusable workspace.
               </p>
             </div>
           </section>
@@ -123,27 +142,31 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
                 key={project.id}
                 href={`/projects/${project.id}`}
                 style={{ animationDelay: `${Math.min(index, 8) * 50}ms` }}
-                className="group animate-fade-in-up rounded-xl border border-border bg-card p-4 transition duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow"
+                className="group relative animate-fade-in-up overflow-hidden rounded-lg border border-border bg-card p-4 transition duration-200 hover:-translate-y-1 hover:border-primary/50 hover:shadow-glow"
               >
+                <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 transition group-hover:opacity-100" />
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <h2 className="truncate text-lg font-semibold text-foreground">
+                    <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Reel {String(index + 1).padStart(2, "0")}
+                    </p>
+                    <h2 className="truncate font-display text-lg font-bold uppercase tracking-tight text-foreground">
                       {project.name}
                     </h2>
-                    <p className="mt-1 truncate text-sm text-muted-foreground">
-                      {project.video?.originalName ?? "No video uploaded"}
+                    <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                      {project.video?.originalName ?? "— no source —"}
                     </p>
                   </div>
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border bg-card-2 transition group-hover:border-primary/40">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border bg-card-2 transition group-hover:border-primary/50">
                     <Film className="h-5 w-5 text-primary" />
                   </div>
                 </div>
-                <div className="mt-5 flex items-center justify-between">
+                <div className="mt-5 flex items-center justify-between border-t border-border pt-3">
                   <Badge tone={project.video ? "success" : "neutral"}>
-                    {project.video ? "Video ready" : "Empty"}
+                    {project.video ? "Loaded" : "Empty"}
                   </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {project._count.clips} clips
+                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                    {String(project._count.clips).padStart(2, "0")} clips
                   </span>
                 </div>
               </Link>

@@ -5,9 +5,9 @@ type BadgeTone = "neutral" | "success" | "warning" | "danger";
 
 const tones: Record<BadgeTone, string> = {
   neutral: "border-border bg-card-2 text-muted-foreground",
-  success: "border-success/30 bg-success/12 text-success",
-  warning: "border-warning/30 bg-warning/12 text-warning",
-  danger: "border-destructive/30 bg-destructive/12 text-destructive",
+  success: "border-success/40 bg-success/12 text-success",
+  warning: "border-warning/40 bg-warning/12 text-warning",
+  danger: "border-destructive/40 bg-destructive/12 text-destructive",
 };
 
 export function Badge({
@@ -22,7 +22,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center rounded-full border px-2 text-[11px] font-semibold uppercase tracking-[0.08em]",
+        "inline-flex h-6 items-center rounded-[3px] border px-2 font-mono text-[10px] font-semibold uppercase tracking-[0.14em]",
         tones[tone],
         className,
       )}

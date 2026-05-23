@@ -4,57 +4,65 @@
 
 @layer base {
   :root {
-    --background: 240 60% 99%;
-    --foreground: 240 14% 10%;
-    --card: 0 0% 100%;
-    --card-2: 240 33% 97%;
-    --muted: 240 30% 96%;
-    --muted-foreground: 240 9% 46%;
-    --border: 240 25% 92%;
-    --input: 240 25% 92%;
-    --ring: 247 84% 65%;
+    /* Light = cool "blueprint" bench notes. Technical paper, ink, deep teal. */
+    --background: 200 18% 93%;
+    --foreground: 205 22% 12%;
+    --card: 200 22% 97%;
+    --card-2: 200 14% 88%;
+    --muted: 200 14% 86%;
+    --muted-foreground: 205 9% 38%;
+    --border: 205 13% 79%;
+    --input: 200 16% 90%;
+    --ring: 188 84% 32%;
 
-    --primary: 247 84% 65%;
-    --primary-foreground: 0 0% 100%;
-    --accent: 292 85% 61%;
-    --accent-foreground: 0 0% 100%;
-    --success: 160 84% 39%;
-    --success-foreground: 0 0% 100%;
-    --warning: 30 95% 44%;
-    --warning-foreground: 0 0% 100%;
-    --destructive: 347 78% 50%;
-    --destructive-foreground: 0 0% 100%;
+    /* Electric cyan — selection marks, REC lamp, render. Deepened for paper. */
+    --primary: 188 86% 32%;
+    --primary-foreground: 200 30% 98%;
+    /* Phosphor green — reserved for the live time readout. */
+    --accent: 158 66% 28%;
+    --accent-foreground: 200 30% 98%;
+    --success: 150 58% 30%;
+    --success-foreground: 200 30% 98%;
+    --warning: 36 90% 40%;
+    --warning-foreground: 200 30% 98%;
+    --destructive: 4 74% 46%;
+    --destructive-foreground: 200 30% 98%;
 
-    --brand-from: 249 84% 62%;
-    --brand-to: 292 85% 58%;
-    --shadow-color: 240 30% 50%;
+    --brand-from: 188 82% 38%;
+    --brand-to: 192 88% 28%;
+    --shadow-color: 205 30% 34%;
+    --grain-opacity: 0.035;
+    --scanline-opacity: 0.03;
   }
 
   .dark {
-    --background: 240 24% 6%;
-    --foreground: 240 20% 96%;
-    --card: 240 22% 10%;
-    --card-2: 240 20% 14%;
-    --muted: 240 16% 20%;
-    --muted-foreground: 240 13% 67%;
-    --border: 240 14% 22%;
-    --input: 240 16% 16%;
-    --ring: 246 91% 74%;
+    /* Dark = the test bench. Blue-black, cool white, electric cyan. */
+    --background: 204 26% 6%;
+    --foreground: 196 24% 87%;
+    --card: 205 22% 9%;
+    --card-2: 205 17% 13%;
+    --muted: 205 13% 18%;
+    --muted-foreground: 200 11% 58%;
+    --border: 205 16% 20%;
+    --input: 205 18% 12%;
+    --ring: 184 80% 52%;
 
-    --primary: 246 91% 74%;
-    --primary-foreground: 246 45% 12%;
-    --accent: 292 91% 73%;
-    --accent-foreground: 292 40% 12%;
-    --success: 160 64% 52%;
-    --success-foreground: 160 60% 10%;
-    --warning: 43 96% 56%;
-    --warning-foreground: 40 60% 12%;
-    --destructive: 351 95% 71%;
-    --destructive-foreground: 351 50% 12%;
+    --primary: 184 74% 52%;
+    --primary-foreground: 200 50% 7%;
+    --accent: 150 72% 52%;
+    --accent-foreground: 150 60% 8%;
+    --success: 150 62% 48%;
+    --success-foreground: 150 60% 8%;
+    --warning: 40 92% 58%;
+    --warning-foreground: 40 60% 10%;
+    --destructive: 4 84% 63%;
+    --destructive-foreground: 4 50% 10%;
 
-    --brand-from: 252 100% 68%;
-    --brand-to: 283 100% 68%;
-    --shadow-color: 240 50% 2%;
+    --brand-from: 184 78% 56%;
+    --brand-to: 190 82% 44%;
+    --shadow-color: 205 70% 1%;
+    --grain-opacity: 0.05;
+    --scanline-opacity: 0.05;
   }
 
   * {
@@ -69,12 +77,38 @@
 
   body {
     margin: 0;
+    position: relative;
     color: hsl(var(--foreground));
     background-color: hsl(var(--background));
+    /* One warm corner glow + a steady horizontal scanline field. No mesh, no purple. */
     background-image:
-      radial-gradient(60rem 40rem at 12% -8%, hsl(var(--brand-from) / 0.14), transparent 60%),
-      radial-gradient(48rem 36rem at 100% 0%, hsl(var(--brand-to) / 0.12), transparent 55%);
+      radial-gradient(50rem 38rem at 100% -10%, hsl(var(--primary) / 0.1), transparent 62%),
+      repeating-linear-gradient(
+        0deg,
+        hsl(var(--foreground) / var(--scanline-opacity)) 0px,
+        hsl(var(--foreground) / var(--scanline-opacity)) 1px,
+        transparent 1px,
+        transparent 4px
+      );
     background-attachment: fixed;
+  }
+
+  /* Film grain overlay — SVG fractal noise, fixed across the whole surface. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+
+  /* Keep app content above the grain plane. */
+  body > * {
+    position: relative;
+    z-index: 1;
   }
 
   button,
@@ -91,7 +125,68 @@
   }
 
   ::selection {
-    background: hsl(var(--primary) / 0.3);
+    background: hsl(var(--primary) / 0.32);
+  }
+}
+
+@layer components {
+  /* Recessed, backlit hardware-counter readout for timecodes. */
+  .lcd {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 4px;
+    border: 1px solid hsl(204 40% 4% / 0.7);
+    /* Dark display housing in both themes, like a real instrument readout. */
+    background: linear-gradient(180deg, hsl(204 30% 9%), hsl(204 32% 6%));
+    box-shadow:
+      inset 0 1px 3px hsl(0 0% 0% / 0.6),
+      0 0 0 1px hsl(var(--foreground) / 0.04);
+    padding: 0.1rem 0.45rem;
+    font-family: var(--font-plex-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+    /* Glowing segments, scaled to whatever signal color is applied. */
+    text-shadow: 0 0 7px color-mix(in srgb, currentColor 55%, transparent);
+  }
+
+  /* Fixed-bright readout inks — legible on the dark LCD housing in both themes. */
+  .lcd-cyan {
+    color: hsl(184 82% 62%);
+  }
+  .lcd-green {
+    color: hsl(150 74% 56%);
+  }
+  .lcd-dim {
+    color: hsl(200 14% 56%);
+  }
+
+  /* Registration crosshair corner ticks — applied to .reg-frame. */
+  .reg-frame::after {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    pointer-events: none;
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
+      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
+      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
+      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
+      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
+      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
+      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
+      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45));
+    background-repeat: no-repeat;
+    background-size:
+      12px 1px, 1px 12px,
+      12px 1px, 1px 12px,
+      12px 1px, 1px 12px,
+      12px 1px, 1px 12px;
+    background-position:
+      top left, top left,
+      top right, top right,
+      bottom left, bottom left,
+      bottom right, bottom right;
+    opacity: 0.6;
   }
 }
 

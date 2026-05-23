@@ -165,10 +165,11 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                 </Link>
               </Button>
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Project
+                <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+                  <span className="h-1.5 w-1.5 animate-rec-pulse rounded-full bg-primary" />
+                  Reel / Editing
                 </p>
-                <h1 className="truncate text-lg font-semibold tracking-tight">
+                <h1 className="truncate font-display text-lg font-bold uppercase tracking-tight">
                   {project.name}
                 </h1>
               </div>
@@ -203,7 +204,9 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
           </header>
 
           <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
-            <section className="grid flex-1 animate-fade-in-up place-items-center overflow-hidden rounded-xl border border-border bg-card shadow-panel">
+            <section className="reg-frame relative grid flex-1 animate-fade-in-up place-items-center overflow-hidden rounded-lg border border-border bg-black shadow-panel">
+              {/* Single scan sweep on load — monitor coming online. */}
+              <span className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 animate-scan bg-gradient-to-b from-transparent via-primary/15 to-transparent" />
               {video ? (
                 <video
                   key={video.id}
@@ -230,40 +233,43 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
               ) : (
                 <div className="grid min-h-[52vh] place-items-center px-6 text-center">
                   <div className="animate-fade-in-up">
-                    <div className="mx-auto mb-5 grid h-20 w-20 animate-float place-items-center rounded-2xl bg-brand-soft">
+                    <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-lg border border-primary/30 bg-brand-soft shadow-lamp">
                       <Scissors className="h-9 w-9 text-primary" />
                     </div>
-                    <h2 className="text-2xl font-semibold tracking-tight">
-                      Upload a source video.
+                    <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.28em] text-primary">
+                      No signal
+                    </p>
+                    <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">
+                      Load a source
                     </h2>
-                    <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                      Supported formats are mp4, mov, and webm. The editor tracks
-                      the playhead and renders clips from the exact timestamp.
+                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+                      Drop an mp4, mov, or webm. The editor tracks the playhead
+                      and renders clips from the exact timestamp.
                     </p>
                   </div>
                 </div>
               )}
             </section>
 
-            <section className="animate-fade-in-up rounded-xl border border-border bg-card p-4 [animation-delay:80ms]">
-              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <section className="animate-fade-in-up rounded-lg border border-border bg-card p-4 [animation-delay:80ms]">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
                   <Clock3 className="h-4 w-4 text-accent" />
-                  <span className="font-mono tabular-nums text-foreground/80">
+                  <span className="lcd lcd-green text-sm font-semibold">
                     {formatTime(currentTime)}
                   </span>
-                  <span className="text-muted-foreground/50">/</span>
-                  <span className="font-mono tabular-nums">
+                  <span className="font-mono text-xs text-muted-foreground/50">/</span>
+                  <span className="lcd lcd-dim text-sm">
                     {formatTime(videoDuration)}
                   </span>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Clip range{" "}
-                  <span className="font-mono tabular-nums text-foreground/80">
+                <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  <span>In</span>
+                  <span className="lcd lcd-cyan text-xs font-semibold">
                     {formatTime(clipStartTime)}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-mono tabular-nums text-foreground/80">
+                  </span>
+                  <span>Out</span>
+                  <span className="lcd lcd-cyan text-xs font-semibold">
                     {formatTime(selectedEndTime)}
                   </span>
                 </div>
@@ -301,8 +307,8 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                       );
                     })}
                   </div>
-                  <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    Custom seconds
+                  <label className="grid gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    Custom · sec
                     <Input
                       className="h-10 w-32"
                       disabled={!video || !videoDuration}
@@ -353,7 +359,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                 </Button>
               </div>
               {error ? (
-                <p className="mt-3 animate-fade-in rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="mt-3 animate-fade-in rounded-md border border-destructive/35 bg-destructive/10 px-3 py-2 font-mono text-xs text-destructive">
                   {error}
                 </p>
               ) : null}

@@ -65,8 +65,9 @@ export function ClipTimeline({
       <div
         ref={trackRef}
         className={cn(
-          "relative h-16 overflow-hidden rounded-md border border-border bg-card-2 transition",
-          disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer hover:border-primary/40",
+          "relative h-16 overflow-hidden rounded-md border border-border bg-card-2 shadow-inset transition",
+          "bg-[repeating-linear-gradient(90deg,hsl(var(--foreground)/0.07)_0,hsl(var(--foreground)/0.07)_1px,transparent_1px,transparent_28px)]",
+          disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer hover:border-primary/50",
         )}
         onPointerDown={(event) => {
           if (disabled) {
@@ -119,29 +120,32 @@ export function ClipTimeline({
       >
         <div className="absolute inset-x-0 top-1/2 h-px bg-border" />
         <div
-          className="absolute bottom-0 top-0 w-px bg-foreground/70 transition-[left] duration-75"
-          style={{ left: `${playheadLeft}%` }}
-        />
-        <div
-          className="absolute bottom-2 top-2 flex min-w-12 items-center justify-center rounded-md border border-primary/60 bg-primary/20 shadow-glow"
+          className="absolute bottom-2 top-2 flex min-w-12 items-center justify-center rounded-[3px] border border-primary/70 bg-primary/20 shadow-glow"
           style={{
             left: `${clipLeft}%`,
             width: `${clipWidth}%`,
           }}
         >
-          <div className="flex h-9 min-w-9 items-center justify-center rounded-md bg-brand text-white shadow-sm">
+          <div className="flex h-9 min-w-9 items-center justify-center rounded-[3px] bg-brand text-primary-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.25)]">
             <Scissors className="h-4 w-4" />
           </div>
         </div>
+        {/* Playhead — sharp line with a triangle head, like a tape counter. */}
+        <div
+          className="absolute bottom-0 top-0 z-10 w-px bg-foreground transition-[left] duration-75"
+          style={{ left: `${playheadLeft}%` }}
+        >
+          <span className="absolute -left-[4px] -top-px h-0 w-0 border-x-[4px] border-t-[6px] border-x-transparent border-t-foreground" />
+        </div>
       </div>
-      <div className="flex items-center justify-between font-mono text-xs tabular-nums text-muted-foreground">
+      <div className="flex items-center justify-between font-mono text-[11px] tabular-nums text-muted-foreground">
         <span>{formatTime(0)}</span>
-        <span className="font-sans">
-          Selected start{" "}
-          <span className="font-mono text-foreground/80">
-            {formatTime(clampedStart)}
-          </span>
-          {isDragging ? " · dragging" : ""}
+        <span className="flex items-center gap-1.5 uppercase tracking-[0.14em]">
+          <span className="text-primary">In</span>
+          <span className="text-foreground/80">{formatTime(clampedStart)}</span>
+          {isDragging ? (
+            <span className="text-primary/70">· scrub</span>
+          ) : null}
         </span>
         <span>{formatTime(safeDuration)}</span>
       </div>
