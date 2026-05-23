@@ -65,8 +65,8 @@ export function ClipTimeline({
       <div
         ref={trackRef}
         className={cn(
-          "relative h-16 overflow-hidden rounded-md border border-white/12 bg-black/35",
-          disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer",
+          "relative h-16 overflow-hidden rounded-md border border-border bg-card-2 transition",
+          disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer hover:border-primary/40",
         )}
         onPointerDown={(event) => {
           if (disabled) {
@@ -117,28 +117,31 @@ export function ClipTimeline({
           }
         }}
       >
-        <div className="absolute inset-x-0 top-1/2 h-px bg-white/14" />
+        <div className="absolute inset-x-0 top-1/2 h-px bg-border" />
         <div
-          className="absolute bottom-0 top-0 w-px bg-paper/60"
+          className="absolute bottom-0 top-0 w-px bg-foreground/70 transition-[left] duration-75"
           style={{ left: `${playheadLeft}%` }}
         />
         <div
-          className="absolute bottom-2 top-2 flex min-w-12 items-center justify-center rounded-md border border-mint/60 bg-mint/22 text-ink shadow-[0_0_28px_rgba(103,215,186,0.2)]"
+          className="absolute bottom-2 top-2 flex min-w-12 items-center justify-center rounded-md border border-primary/60 bg-primary/20 shadow-glow"
           style={{
             left: `${clipLeft}%`,
             width: `${clipWidth}%`,
           }}
         >
-          <div className="flex h-9 min-w-9 items-center justify-center rounded-md bg-mint text-ink shadow-sm">
+          <div className="flex h-9 min-w-9 items-center justify-center rounded-md bg-brand text-white shadow-sm">
             <Scissors className="h-4 w-4" />
           </div>
         </div>
       </div>
-      <div className="flex items-center justify-between text-xs text-paper/42">
+      <div className="flex items-center justify-between font-mono text-xs tabular-nums text-muted-foreground">
         <span>{formatTime(0)}</span>
-        <span>
-          Selected start {formatTime(clampedStart)}
-          {isDragging ? " dragging" : ""}
+        <span className="font-sans">
+          Selected start{" "}
+          <span className="font-mono text-foreground/80">
+            {formatTime(clampedStart)}
+          </span>
+          {isDragging ? " · dragging" : ""}
         </span>
         <span>{formatTime(safeDuration)}</span>
       </div>

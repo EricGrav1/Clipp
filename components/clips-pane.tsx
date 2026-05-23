@@ -101,27 +101,27 @@ export function ClipsPane({
   }
 
   return (
-    <aside className="flex min-h-[40vh] flex-col border-l border-white/10 bg-[#171815] xl:min-h-screen">
-      <header className="flex min-h-16 items-center justify-between border-b border-white/10 px-4">
+    <aside className="flex min-h-[40vh] flex-col border-l border-border bg-card/60 backdrop-blur xl:min-h-screen">
+      <header className="flex min-h-16 items-center justify-between border-b border-border px-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-paper/42">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Output
           </p>
-          <h2 className="font-semibold text-paper">Clips Pane</h2>
+          <h2 className="font-semibold text-foreground">Clips Pane</h2>
         </div>
         <Badge tone="neutral">{clips.length}</Badge>
       </header>
 
       <div className="flex-1 overflow-y-auto p-3">
         {error ? (
-          <p className="mb-3 rounded-md border border-signal/20 bg-signal/10 p-3 text-sm text-[#ffaaa6]">
+          <p className="mb-3 animate-fade-in rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </p>
         ) : null}
 
         {clips.length === 0 ? (
-          <div className="grid min-h-64 place-items-center rounded-lg border border-dashed border-white/12 p-6 text-center">
-            <p className="max-w-56 text-sm leading-6 text-paper/52">
+          <div className="grid min-h-64 place-items-center rounded-xl border border-dashed border-border p-6 text-center">
+            <p className="max-w-56 text-sm leading-6 text-muted-foreground">
               Generated clips appear here with preview, rename, delete, and
               download actions.
             </p>
@@ -132,11 +132,13 @@ export function ClipsPane({
               const isEditing = editingId === clip.id;
               const isBusy = busyClipId === clip.id;
               const isReady = clip.status === "READY" && clip.url;
+              const isProcessing =
+                clip.status !== "READY" && clip.status !== "FAILED";
 
               return (
                 <article
                   key={clip.id}
-                  className="rounded-lg border border-white/10 bg-white/[0.045] p-3"
+                  className="group animate-fade-in-up rounded-xl border border-border bg-card-2 p-3 transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow"
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -151,11 +153,11 @@ export function ClipsPane({
                           }}
                         />
                       ) : (
-                        <h3 className="truncate font-semibold text-paper">
+                        <h3 className="truncate font-semibold text-foreground">
                           {clip.title}
                         </h3>
                       )}
-                      <p className="mt-1 text-xs text-paper/48">
+                      <p className="mt-1 font-mono text-xs tabular-nums text-muted-foreground">
                         {formatTime(clip.startTime)} - {formatTime(clip.endTime)}
                         {"  "}|{"  "}
                         {formatDuration(clip.duration)}
@@ -169,13 +171,14 @@ export function ClipsPane({
                             ? "danger"
                             : "warning"
                       }
+                      className={isProcessing ? "animate-glow-pulse" : undefined}
                     >
                       {clip.status.toLowerCase()}
                     </Badge>
                   </div>
 
                   {clip.error ? (
-                    <p className="mb-3 line-clamp-3 rounded-md bg-black/20 p-2 text-xs text-[#ffaaa6]">
+                    <p className="mb-3 line-clamp-3 rounded-md bg-destructive/10 p-2 text-xs text-destructive">
                       {clip.error}
                     </p>
                   ) : null}
@@ -251,16 +254,23 @@ export function ClipsPane({
 
       {previewClip ? (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/74 p-4"
+          className="fixed inset-0 z-50 grid animate-fade-in place-items-center bg-background/70 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label="Preview clip"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setPreviewClip(null);
+            }
+          }}
         >
-          <div className="w-full max-w-3xl rounded-lg border border-white/12 bg-[#171815] p-4 shadow-panel">
+          <div className="w-full max-w-3xl animate-scale-in rounded-xl border border-border bg-card p-4 shadow-panel">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="truncate text-lg font-semibold">{previewClip.title}</h3>
-                <p className="text-sm text-paper/48">
+                <h3 className="truncate text-lg font-semibold tracking-tight">
+                  {previewClip.title}
+                </h3>
+                <p className="font-mono text-sm tabular-nums text-muted-foreground">
                   {formatTime(previewClip.startTime)} -{" "}
                   {formatTime(previewClip.endTime)}
                 </p>

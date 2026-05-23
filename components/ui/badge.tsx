@@ -4,10 +4,10 @@ import { cn } from "@/components/ui/utils";
 type BadgeTone = "neutral" | "success" | "warning" | "danger";
 
 const tones: Record<BadgeTone, string> = {
-  neutral: "border-white/12 bg-white/[0.06] text-paper/70",
-  success: "border-mint/25 bg-mint/12 text-mint",
-  warning: "border-brass/30 bg-brass/12 text-[#f1c66d]",
-  danger: "border-signal/25 bg-signal/12 text-[#ffaaa6]",
+  neutral: "border-border bg-card-2 text-muted-foreground",
+  success: "border-success/30 bg-success/12 text-success",
+  warning: "border-warning/30 bg-warning/12 text-warning",
+  danger: "border-destructive/30 bg-destructive/12 text-destructive",
 };
 
 export function Badge({

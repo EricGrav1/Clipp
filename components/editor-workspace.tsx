@@ -14,6 +14,7 @@ import { ClipTimeline } from "@/components/clip-timeline";
 import { ClipsPane, type ClipItem } from "@/components/clips-pane";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { formatTime } from "@/lib/format";
 
 type VideoItem = {
@@ -153,10 +154,10 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
   }
 
   return (
-    <main className="min-h-screen bg-ink text-paper">
+    <main className="min-h-screen text-foreground">
       <div className="grid min-h-screen xl:grid-cols-[1fr_380px]">
         <section className="flex min-w-0 flex-col">
-          <header className="flex min-h-16 items-center justify-between gap-4 border-b border-white/10 px-4 sm:px-6">
+          <header className="flex min-h-16 items-center justify-between gap-4 border-b border-border px-4 sm:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <Button asChild size="icon" variant="ghost" title="Back">
                 <Link href="/" aria-label="Back to projects">
@@ -164,10 +165,12 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                 </Link>
               </Button>
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-paper/42">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   Project
                 </p>
-                <h1 className="truncate text-lg font-semibold">{project.name}</h1>
+                <h1 className="truncate text-lg font-semibold tracking-tight">
+                  {project.name}
+                </h1>
               </div>
             </div>
             <input
@@ -182,22 +185,25 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                 }
               }}
             />
-            <Button
-              disabled={isUploading}
-              onClick={() => fileInputRef.current?.click()}
-              variant="secondary"
-            >
-              {isUploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
-              {video ? "Replace Video" : "Upload Video"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                variant="secondary"
+              >
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                {video ? "Replace Video" : "Upload Video"}
+              </Button>
+              <ThemeToggle />
+            </div>
           </header>
 
           <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
-            <section className="grid flex-1 place-items-center overflow-hidden rounded-lg border border-white/10 bg-black/45 shadow-panel">
+            <section className="grid flex-1 animate-fade-in-up place-items-center overflow-hidden rounded-xl border border-border bg-card shadow-panel">
               {video ? (
                 <video
                   key={video.id}
@@ -223,10 +229,14 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                 />
               ) : (
                 <div className="grid min-h-[52vh] place-items-center px-6 text-center">
-                  <div>
-                    <Scissors className="mx-auto mb-4 h-12 w-12 text-mint" />
-                    <h2 className="text-2xl font-semibold">Upload a source video.</h2>
-                    <p className="mt-2 max-w-md text-sm leading-6 text-paper/56">
+                  <div className="animate-fade-in-up">
+                    <div className="mx-auto mb-5 grid h-20 w-20 animate-float place-items-center rounded-2xl bg-brand-soft">
+                      <Scissors className="h-9 w-9 text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-semibold tracking-tight">
+                      Upload a source video.
+                    </h2>
+                    <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
                       Supported formats are mp4, mov, and webm. The editor tracks
                       the playhead and renders clips from the exact timestamp.
                     </p>
@@ -235,17 +245,27 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
               )}
             </section>
 
-            <section className="rounded-lg border border-white/10 bg-white/[0.045] p-4">
+            <section className="animate-fade-in-up rounded-xl border border-border bg-card p-4 [animation-delay:80ms]">
               <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2 text-sm text-paper/62">
-                  <Clock3 className="h-4 w-4 text-brass" />
-                  <span>{formatTime(currentTime)}</span>
-                  <span className="text-paper/26">/</span>
-                  <span>{formatTime(videoDuration)}</span>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock3 className="h-4 w-4 text-accent" />
+                  <span className="font-mono tabular-nums text-foreground/80">
+                    {formatTime(currentTime)}
+                  </span>
+                  <span className="text-muted-foreground/50">/</span>
+                  <span className="font-mono tabular-nums">
+                    {formatTime(videoDuration)}
+                  </span>
                 </div>
-                <div className="text-sm text-paper/50">
-                  Clip range {formatTime(clipStartTime)} to{" "}
-                  {formatTime(selectedEndTime)}
+                <div className="text-sm text-muted-foreground">
+                  Clip range{" "}
+                  <span className="font-mono tabular-nums text-foreground/80">
+                    {formatTime(clipStartTime)}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-mono tabular-nums text-foreground/80">
+                    {formatTime(selectedEndTime)}
+                  </span>
                 </div>
               </div>
 
@@ -281,7 +301,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                       );
                     })}
                   </div>
-                  <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-paper/42">
+                  <label className="grid gap-1 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                     Custom seconds
                     <Input
                       className="h-10 w-32"
@@ -332,7 +352,11 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                   {isCreating ? "Rendering" : "Create Clip"}
                 </Button>
               </div>
-              {error ? <p className="mt-3 text-sm text-[#ffaaa6]">{error}</p> : null}
+              {error ? (
+                <p className="mt-3 animate-fade-in rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {error}
+                </p>
+              ) : null}
             </section>
           </div>
         </section>

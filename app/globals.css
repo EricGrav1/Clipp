@@ -2,42 +2,118 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-  background: #121311;
+@layer base {
+  :root {
+    --background: 240 60% 99%;
+    --foreground: 240 14% 10%;
+    --card: 0 0% 100%;
+    --card-2: 240 33% 97%;
+    --muted: 240 30% 96%;
+    --muted-foreground: 240 9% 46%;
+    --border: 240 25% 92%;
+    --input: 240 25% 92%;
+    --ring: 247 84% 65%;
+
+    --primary: 247 84% 65%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 292 85% 61%;
+    --accent-foreground: 0 0% 100%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --warning: 30 95% 44%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 347 78% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --brand-from: 249 84% 62%;
+    --brand-to: 292 85% 58%;
+    --shadow-color: 240 30% 50%;
+  }
+
+  .dark {
+    --background: 240 24% 6%;
+    --foreground: 240 20% 96%;
+    --card: 240 22% 10%;
+    --card-2: 240 20% 14%;
+    --muted: 240 16% 20%;
+    --muted-foreground: 240 13% 67%;
+    --border: 240 14% 22%;
+    --input: 240 16% 16%;
+    --ring: 246 91% 74%;
+
+    --primary: 246 91% 74%;
+    --primary-foreground: 246 45% 12%;
+    --accent: 292 91% 73%;
+    --accent-foreground: 292 40% 12%;
+    --success: 160 64% 52%;
+    --success-foreground: 160 60% 10%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 40 60% 12%;
+    --destructive: 351 95% 71%;
+    --destructive-foreground: 351 50% 12%;
+
+    --brand-from: 252 100% 68%;
+    --brand-to: 283 100% 68%;
+    --shadow-color: 240 50% 2%;
+  }
+
+  * {
+    box-sizing: border-box;
+    border-color: hsl(var(--border));
+  }
+
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(60rem 40rem at 12% -8%, hsl(var(--brand-from) / 0.14), transparent 60%),
+      radial-gradient(48rem 36rem at 100% 0%, hsl(var(--brand-to) / 0.12), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  input[type="range"] {
+    accent-color: hsl(var(--primary));
+  }
+
+  video {
+    background: #000;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.3);
+  }
 }
 
-* {
-  box-sizing: border-box;
+/* Smooth color transition only while the theme is switching. */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease,
+    fill 0.3s ease,
+    stroke 0.3s ease !important;
 }
 
-html,
-body {
-  min-height: 100%;
-}
-
-body {
-  margin: 0;
-  background:
-    linear-gradient(135deg, rgba(103, 215, 186, 0.1), transparent 24rem),
-    radial-gradient(circle at 80% 8%, rgba(192, 145, 58, 0.16), transparent 21rem),
-    #121311;
-  color: #f7f3eb;
-}
-
-button,
-input {
-  font: inherit;
-}
-
-input[type="range"] {
-  accent-color: #67d7ba;
-}
-
-video {
-  background: #050605;
-}
-
-::selection {
-  background: rgba(103, 215, 186, 0.32);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

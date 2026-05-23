@@ -13,12 +13,13 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-mint text-ink hover:bg-[#7be4ca] border-mint shadow-[0_0_0_1px_rgba(103,215,186,0.28)]",
+    "bg-brand text-white border-transparent shadow-[0_8px_24px_-10px_hsl(var(--brand-to)/0.7)] hover:shadow-glow hover:brightness-110",
   secondary:
-    "bg-white/8 text-paper hover:bg-white/12 border-white/12",
-  ghost: "bg-transparent text-paper/78 hover:bg-white/8 border-transparent",
+    "bg-card text-foreground border-border hover:border-primary/40 hover:bg-card-2",
+  ghost:
+    "bg-transparent text-foreground/75 border-transparent hover:bg-card-2 hover:text-foreground",
   danger:
-    "bg-signal/12 text-[#ffb1ad] hover:bg-signal/18 border-signal/25",
+    "bg-destructive/12 text-destructive border-destructive/30 hover:bg-destructive/20",
 };
 
 const sizes: Record<ButtonSize, string> = {
@@ -36,8 +37,9 @@ export function Button({
   ...props
 }: ButtonProps) {
   const mergedClassName = cn(
-    "inline-flex items-center justify-center gap-2 rounded-md border font-medium transition disabled:cursor-not-allowed disabled:opacity-45",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink",
+    "inline-flex items-center justify-center gap-2 rounded-md border font-medium transition duration-200",
+    "active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     variants[variant],
     sizes[size],
     className,
