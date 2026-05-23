@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  video Video?
+  clips Clip[]
+}
+
+model Video {
+  id              String   @id @default(cuid())
+  projectId       String   @unique
+  originalName    String
+  mimeType        String
+  fileName        String
+  url             String
+  path            String
+  sizeBytes       Int
+  durationSeconds Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  clips   Clip[]
+}
+
+model Clip {
+  id        String     @id @default(cuid())
+  projectId String
+  videoId   String
+  title     String
+  startTime Float
+  endTime   Float
+  duration  Float
+  status    String   @default("RENDERING")
+  fileName  String?
+  url       String?
+  path      String?
+  error     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  video   Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}
