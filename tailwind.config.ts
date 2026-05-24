@@ -42,36 +42,40 @@ const config: Config = {
           DEFAULT: token("destructive"),
           foreground: token("destructive-foreground"),
         },
+        sky: token("sky"),
       },
       fontFamily: {
-        sans: ["var(--font-archivo)", "system-ui", "sans-serif"],
+        sans: ["var(--font-nunito)", "system-ui", "sans-serif"],
         display: [
-          "var(--font-archivo-black)",
-          "var(--font-archivo)",
+          "var(--font-fredoka)",
+          "var(--font-nunito)",
           "system-ui",
           "sans-serif",
         ],
         mono: ["var(--font-plex-mono)", "ui-monospace", "monospace"],
       },
       borderRadius: {
-        // Squarer, equipment-panel geometry.
-        DEFAULT: "3px",
-        md: "4px",
-        lg: "6px",
-        xl: "9px",
-        "2xl": "12px",
+        // Soft, rounded, friendly geometry.
+        DEFAULT: "8px",
+        md: "10px",
+        lg: "14px",
+        xl: "20px",
+        "2xl": "28px",
       },
       backgroundImage: {
-        // Vertical, physical-button orange — not a diagonal rainbow.
+        // Soft vertical green — like a freshly painted barn button.
         brand: "linear-gradient(180deg, hsl(var(--brand-from)), hsl(var(--brand-to)))",
         "brand-soft":
-          "linear-gradient(180deg, hsl(var(--brand-from) / 0.18), hsl(var(--brand-to) / 0.1))",
+          "linear-gradient(180deg, hsl(var(--brand-from) / 0.2), hsl(var(--brand-to) / 0.12))",
+        "sky-soft":
+          "linear-gradient(180deg, hsl(var(--sky) / 0.35), hsl(var(--warning) / 0.18))",
       },
       boxShadow: {
-        panel: "0 30px 80px -28px hsl(var(--shadow-color) / 0.6)",
-        glow: "0 0 0 1px hsl(var(--primary) / 0.4), 0 10px 32px -10px hsl(var(--primary) / 0.55)",
-        lamp: "0 0 0 2px hsl(var(--primary) / 0.25), 0 0 14px 1px hsl(var(--primary) / 0.7)",
-        inset: "inset 0 1px 2px hsl(var(--shadow-color) / 0.45)",
+        // Soft, warm, lifted — no neon glow.
+        panel: "0 24px 60px -24px hsl(var(--shadow-color) / 0.4)",
+        soft: "0 4px 14px -6px hsl(var(--shadow-color) / 0.3)",
+        glow: "0 10px 26px -10px hsl(var(--primary) / 0.45)",
+        lamp: "0 8px 24px -8px hsl(var(--warning) / 0.55)",
       },
       keyframes: {
         "fade-in": {
@@ -93,26 +97,25 @@ const config: Config = {
           "0%, 100%": { opacity: "0.55" },
           "50%": { opacity: "1" },
         },
-        // REC lamp — sharp on, soft fade, like a real indicator.
-        "rec-pulse": {
-          "0%, 100%": { opacity: "1", boxShadow: "0 0 0 0 hsl(var(--primary) / 0.55)" },
-          "50%": { opacity: "0.45", boxShadow: "0 0 0 5px hsl(var(--primary) / 0)" },
+        // Gentle idle bob — for the bear mascot.
+        bob: {
+          "0%, 100%": { transform: "translateY(0) rotate(-1deg)" },
+          "50%": { transform: "translateY(-5px) rotate(1deg)" },
         },
-        // Single scan sweep across the monitor on load.
-        scan: {
-          "0%": { transform: "translateY(-100%)", opacity: "0" },
-          "12%": { opacity: "0.5" },
-          "100%": { transform: "translateY(220%)", opacity: "0" },
+        // Soft sway — for wheat / leaf decorations.
+        sway: {
+          "0%, 100%": { transform: "rotate(-3deg)" },
+          "50%": { transform: "rotate(3deg)" },
         },
       },
       animation: {
         "fade-in": "fade-in 0.4s ease-out both",
         "fade-in-up": "fade-in-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both",
-        "scale-in": "scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "scale-in": "scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both",
         shimmer: "shimmer 1.6s infinite",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
-        "rec-pulse": "rec-pulse 1.8s ease-in-out infinite",
-        scan: "scan 2.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both",
+        bob: "bob 4s ease-in-out infinite",
+        sway: "sway 5s ease-in-out infinite",
       },
     },
   },

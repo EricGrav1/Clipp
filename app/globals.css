@@ -4,65 +4,67 @@
 
 @layer base {
   :root {
-    /* Light = cool "blueprint" bench notes. Technical paper, ink, deep teal. */
-    --background: 200 18% 93%;
-    --foreground: 205 22% 12%;
-    --card: 200 22% 97%;
-    --card-2: 200 14% 88%;
-    --muted: 200 14% 86%;
-    --muted-foreground: 205 9% 38%;
-    --border: 205 13% 79%;
-    --input: 200 16% 90%;
-    --ring: 188 84% 32%;
+    /* Sunny homestead — wheat-cream day. Fresh green + tomato. */
+    --background: 43 64% 92%;
+    --foreground: 28 32% 18%;
+    --card: 44 78% 97%;
+    --card-2: 40 52% 89%;
+    --muted: 40 42% 87%;
+    --muted-foreground: 30 16% 40%;
+    --border: 38 36% 79%;
+    --input: 44 64% 95%;
+    --ring: 122 40% 40%;
 
-    /* Electric cyan — selection marks, REC lamp, render. Deepened for paper. */
-    --primary: 188 86% 32%;
-    --primary-foreground: 200 30% 98%;
-    /* Phosphor green — reserved for the live time readout. */
-    --accent: 158 66% 28%;
-    --accent-foreground: 200 30% 98%;
-    --success: 150 58% 30%;
-    --success-foreground: 200 30% 98%;
-    --warning: 36 90% 40%;
-    --warning-foreground: 200 30% 98%;
-    --destructive: 4 74% 46%;
-    --destructive-foreground: 200 30% 98%;
+    /* Fresh field green — the primary "go / harvest" signal. */
+    --primary: 122 40% 42%;
+    --primary-foreground: 44 78% 98%;
+    /* Ripe tomato — the warm accent. */
+    --accent: 9 74% 56%;
+    --accent-foreground: 44 78% 98%;
+    --success: 130 46% 38%;
+    --success-foreground: 44 78% 98%;
+    /* Butter / harvest gold. */
+    --warning: 40 84% 50%;
+    --warning-foreground: 30 50% 16%;
+    --destructive: 6 70% 50%;
+    --destructive-foreground: 44 78% 98%;
 
-    --brand-from: 188 82% 38%;
-    --brand-to: 192 88% 28%;
-    --shadow-color: 205 30% 34%;
-    --grain-opacity: 0.035;
-    --scanline-opacity: 0.03;
+    /* Big-sky blue — decorative (mascot, glows) only. */
+    --sky: 202 58% 62%;
+    --brand-from: 124 42% 46%;
+    --brand-to: 134 44% 38%;
+    --shadow-color: 30 36% 36%;
+    --grain-opacity: 0.03;
   }
 
   .dark {
-    /* Dark = the test bench. Blue-black, cool white, electric cyan. */
-    --background: 204 26% 6%;
-    --foreground: 196 24% 87%;
-    --card: 205 22% 9%;
-    --card-2: 205 17% 13%;
-    --muted: 205 13% 18%;
-    --muted-foreground: 200 11% 58%;
-    --border: 205 16% 20%;
-    --input: 205 18% 12%;
-    --ring: 184 80% 52%;
+    /* Dusk on the farm — warm green-brown night. */
+    --background: 40 16% 9%;
+    --foreground: 42 42% 90%;
+    --card: 38 15% 12%;
+    --card-2: 36 14% 16%;
+    --muted: 36 11% 22%;
+    --muted-foreground: 40 14% 64%;
+    --border: 36 13% 24%;
+    --input: 38 14% 14%;
+    --ring: 125 46% 56%;
 
-    --primary: 184 74% 52%;
-    --primary-foreground: 200 50% 7%;
-    --accent: 150 72% 52%;
-    --accent-foreground: 150 60% 8%;
-    --success: 150 62% 48%;
-    --success-foreground: 150 60% 8%;
-    --warning: 40 92% 58%;
+    --primary: 125 48% 56%;
+    --primary-foreground: 122 50% 8%;
+    --accent: 10 82% 64%;
+    --accent-foreground: 10 60% 10%;
+    --success: 130 52% 54%;
+    --success-foreground: 130 60% 8%;
+    --warning: 42 90% 60%;
     --warning-foreground: 40 60% 10%;
-    --destructive: 4 84% 63%;
-    --destructive-foreground: 4 50% 10%;
+    --destructive: 6 80% 62%;
+    --destructive-foreground: 6 50% 10%;
 
-    --brand-from: 184 78% 56%;
-    --brand-to: 190 82% 44%;
-    --shadow-color: 205 70% 1%;
-    --grain-opacity: 0.05;
-    --scanline-opacity: 0.05;
+    --sky: 202 54% 58%;
+    --brand-from: 126 46% 52%;
+    --brand-to: 134 48% 42%;
+    --shadow-color: 30 50% 2%;
+    --grain-opacity: 0.045;
   }
 
   * {
@@ -80,20 +82,14 @@
     position: relative;
     color: hsl(var(--foreground));
     background-color: hsl(var(--background));
-    /* One warm corner glow + a steady horizontal scanline field. No mesh, no purple. */
+    /* Warm sun glow from the top + a soft field tint rising from the bottom. */
     background-image:
-      radial-gradient(50rem 38rem at 100% -10%, hsl(var(--primary) / 0.1), transparent 62%),
-      repeating-linear-gradient(
-        0deg,
-        hsl(var(--foreground) / var(--scanline-opacity)) 0px,
-        hsl(var(--foreground) / var(--scanline-opacity)) 1px,
-        transparent 1px,
-        transparent 4px
-      );
+      radial-gradient(60rem 30rem at 50% -14%, hsl(var(--warning) / 0.22), transparent 60%),
+      radial-gradient(80rem 40rem at 50% 116%, hsl(var(--primary) / 0.12), transparent 60%);
     background-attachment: fixed;
   }
 
-  /* Film grain overlay — SVG fractal noise, fixed across the whole surface. */
+  /* Faint paper grain so the cream doesn't read as flat digital fill. */
   body::before {
     content: "";
     position: fixed;
@@ -101,11 +97,10 @@
     z-index: 0;
     pointer-events: none;
     opacity: var(--grain-opacity);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
   }
 
-  /* Keep app content above the grain plane. */
   body > * {
     position: relative;
     z-index: 1;
@@ -125,68 +120,35 @@
   }
 
   ::selection {
-    background: hsl(var(--primary) / 0.32);
+    background: hsl(var(--primary) / 0.28);
   }
 }
 
 @layer components {
-  /* Recessed, backlit hardware-counter readout for timecodes. */
-  .lcd {
+  /* Friendly little "wooden sign" timecode chip. */
+  .sign {
     display: inline-flex;
     align-items: center;
-    border-radius: 4px;
-    border: 1px solid hsl(204 40% 4% / 0.7);
-    /* Dark display housing in both themes, like a real instrument readout. */
-    background: linear-gradient(180deg, hsl(204 30% 9%), hsl(204 32% 6%));
+    border-radius: 8px;
+    border: 1px solid hsl(var(--foreground) / 0.1);
+    background: hsl(var(--card));
     box-shadow:
-      inset 0 1px 3px hsl(0 0% 0% / 0.6),
-      0 0 0 1px hsl(var(--foreground) / 0.04);
-    padding: 0.1rem 0.45rem;
+      inset 0 1px 0 hsl(0 0% 100% / 0.4),
+      0 1px 2px hsl(var(--shadow-color) / 0.18);
+    padding: 0.12rem 0.5rem;
     font-family: var(--font-plex-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.06em;
-    /* Glowing segments, scaled to whatever signal color is applied. */
-    text-shadow: 0 0 7px color-mix(in srgb, currentColor 55%, transparent);
+    letter-spacing: 0.02em;
   }
 
-  /* Fixed-bright readout inks — legible on the dark LCD housing in both themes. */
-  .lcd-cyan {
-    color: hsl(184 82% 62%);
+  .sign-fresh {
+    color: hsl(var(--primary));
   }
-  .lcd-green {
-    color: hsl(150 74% 56%);
+  .sign-ripe {
+    color: hsl(var(--accent));
   }
-  .lcd-dim {
-    color: hsl(200 14% 56%);
-  }
-
-  /* Registration crosshair corner ticks — applied to .reg-frame. */
-  .reg-frame::after {
-    content: "";
-    position: absolute;
-    inset: 8px;
-    pointer-events: none;
-    background-image:
-      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
-      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
-      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
-      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
-      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
-      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
-      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45)),
-      linear-gradient(hsl(var(--foreground) / 0.45), hsl(var(--foreground) / 0.45));
-    background-repeat: no-repeat;
-    background-size:
-      12px 1px, 1px 12px,
-      12px 1px, 1px 12px,
-      12px 1px, 1px 12px,
-      12px 1px, 1px 12px;
-    background-position:
-      top left, top left,
-      top right, top right,
-      bottom left, bottom left,
-      bottom right, bottom right;
-    opacity: 0.6;
+  .sign-dim {
+    color: hsl(var(--muted-foreground));
   }
 }
 

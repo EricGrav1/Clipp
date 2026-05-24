@@ -3,9 +3,9 @@
 import {
   ArrowLeft,
   Clock3,
-  Download,
   Loader2,
   Scissors,
+  Sprout,
   Upload,
 } from "lucide-react";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import { ClipTimeline } from "@/components/clip-timeline";
 import { ClipsPane, type ClipItem } from "@/components/clips-pane";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BearFarmer } from "@/components/ui/mascot";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { formatTime } from "@/lib/format";
 
@@ -164,12 +165,13 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
               </Button>
+              <BearFarmer size={36} className="hidden shrink-0 sm:block" />
               <div className="min-w-0">
-                <p className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-                  <span className="h-1.5 w-1.5 animate-rec-pulse rounded-full bg-primary" />
-                  Reel / Editing
+                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary">
+                  <Sprout className="h-3.5 w-3.5" />
+                  Field / Harvesting
                 </p>
-                <h1 className="truncate font-display text-lg font-bold uppercase tracking-tight">
+                <h1 className="truncate font-display text-lg font-bold tracking-tight">
                   {project.name}
                 </h1>
               </div>
@@ -197,16 +199,14 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                 ) : (
                   <Upload className="h-4 w-4" />
                 )}
-                {video ? "Replace Video" : "Upload Video"}
+                {video ? "Replant Video" : "Plant Video"}
               </Button>
               <ThemeToggle />
             </div>
           </header>
 
           <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
-            <section className="reg-frame relative grid flex-1 animate-fade-in-up place-items-center overflow-hidden rounded-lg border border-border bg-black shadow-panel">
-              {/* Single scan sweep on load — monitor coming online. */}
-              <span className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 animate-scan bg-gradient-to-b from-transparent via-primary/15 to-transparent" />
+            <section className="relative grid flex-1 animate-fade-in-up place-items-center overflow-hidden rounded-xl border border-border bg-black shadow-panel">
               {video ? (
                 <video
                   key={video.id}
@@ -231,45 +231,43 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                   }}
                 />
               ) : (
-                <div className="grid min-h-[52vh] place-items-center px-6 text-center">
+                <div className="grid min-h-[52vh] place-items-center bg-card px-6 text-center">
                   <div className="animate-fade-in-up">
-                    <div className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-lg border border-primary/30 bg-brand-soft shadow-lamp">
-                      <Scissors className="h-9 w-9 text-primary" />
-                    </div>
-                    <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.28em] text-primary">
-                      No signal
+                    <BearFarmer size={104} className="mx-auto mb-5 animate-bob" />
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-primary">
+                      Empty field
                     </p>
-                    <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">
-                      Load a source
+                    <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                      Plant a video to begin
                     </h2>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                      Drop an mp4, mov, or webm. The editor tracks the playhead
-                      and renders clips from the exact timestamp.
+                      Drop in an mp4, mov, or webm. Barnaby tracks the playhead and
+                      harvests clips from the exact timestamp.
                     </p>
                   </div>
                 </div>
               )}
             </section>
 
-            <section className="animate-fade-in-up rounded-lg border border-border bg-card p-4 [animation-delay:80ms]">
+            <section className="animate-fade-in-up rounded-xl border border-border bg-card p-4 shadow-soft [animation-delay:80ms]">
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
-                  <Clock3 className="h-4 w-4 text-accent" />
-                  <span className="lcd lcd-green text-sm font-semibold">
+                  <Clock3 className="h-4 w-4 text-primary" />
+                  <span className="sign sign-fresh text-sm font-semibold">
                     {formatTime(currentTime)}
                   </span>
-                  <span className="font-mono text-xs text-muted-foreground/50">/</span>
-                  <span className="lcd lcd-dim text-sm">
+                  <span className="text-xs text-muted-foreground/50">/</span>
+                  <span className="sign sign-dim text-sm">
                     {formatTime(videoDuration)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                   <span>In</span>
-                  <span className="lcd lcd-cyan text-xs font-semibold">
+                  <span className="sign sign-ripe text-xs font-semibold">
                     {formatTime(clipStartTime)}
                   </span>
                   <span>Out</span>
-                  <span className="lcd lcd-cyan text-xs font-semibold">
+                  <span className="sign sign-ripe text-xs font-semibold">
                     {formatTime(selectedEndTime)}
                   </span>
                 </div>
@@ -307,8 +305,8 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                       );
                     })}
                   </div>
-                  <label className="grid gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    Custom · sec
+                  <label className="grid gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                    Custom seconds
                     <Input
                       className="h-10 w-32"
                       disabled={!video || !videoDuration}
@@ -353,13 +351,13 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                   {isCreating ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Download className="h-4 w-4" />
+                    <Scissors className="h-4 w-4" />
                   )}
-                  {isCreating ? "Rendering" : "Create Clip"}
+                  {isCreating ? "Harvesting" : "Harvest Clip"}
                 </Button>
               </div>
               {error ? (
-                <p className="mt-3 animate-fade-in rounded-md border border-destructive/35 bg-destructive/10 px-3 py-2 font-mono text-xs text-destructive">
+                <p className="mt-3 animate-fade-in rounded-lg border border-destructive/35 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
                   {error}
                 </p>
               ) : null}

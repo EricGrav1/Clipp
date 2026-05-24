@@ -1,23 +1,26 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Archivo, Archivo_Black, IBM_Plex_Mono } from "next/font/google";
+import { Fredoka, Nunito, IBM_Plex_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import "./globals.css";
 
-const archivo = Archivo({
+// Display — rounded, friendly, the Clip Farmer voice.
+const fredoka = Fredoka({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-archivo",
+  variable: "--font-fredoka",
   display: "swap",
 });
 
-const archivoBlack = Archivo_Black({
+// Body / UI — warm, rounded, highly readable.
+const nunito = Nunito({
   subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-archivo-black",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-nunito",
   display: "swap",
 });
 
+// Timecodes — the only place we keep a true monospace.
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
@@ -26,8 +29,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Clipper Studio — Edit Bay",
-  description: "A lightweight project-based video clipping tool.",
+  title: "Clip Farmer — plant a video, harvest the clips",
+  description:
+    "Clip Farmer is a friendly project-based tool for harvesting clips from your videos.",
 };
 
 const themeInitScript = `
@@ -49,7 +53,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${archivo.variable} ${archivoBlack.variable} ${plexMono.variable}`}
+      className={`${fredoka.variable} ${nunito.variable} ${plexMono.variable}`}
       suppressHydrationWarning
     >
       <head>

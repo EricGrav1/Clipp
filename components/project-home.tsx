@@ -1,12 +1,13 @@
 "use client";
 
-import { Film, FolderPlus } from "lucide-react";
+import { Film, Sprout, Tractor } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BearFarmer } from "@/components/ui/mascot";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 type ProjectCard = {
@@ -33,13 +34,13 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: name.trim() || `Project ${projects.length + 1}`,
+          name: name.trim() || `Field ${projects.length + 1}`,
         }),
       });
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Could not create project.");
+        throw new Error(payload.error ?? "Could not plant the field.");
       }
 
       router.push(`/projects/${payload.project.id}`);
@@ -47,7 +48,7 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Could not create project.",
+          : "Could not plant the field.",
       );
     } finally {
       setIsCreating(false);
@@ -57,43 +58,49 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
   return (
     <main className="min-h-screen px-5 py-6 sm:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        {/* Edit-bay top rail */}
+        {/* Top rail — wordmark + mascot */}
         <div className="flex animate-fade-in items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="grid h-2.5 w-2.5 animate-rec-pulse place-items-center rounded-full bg-primary" />
-            <span className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-foreground/80">
-              Clipper Studio
-            </span>
-            <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground sm:inline">
-              / Edit Bay
-            </span>
+            <BearFarmer size={40} className="animate-bob" />
+            <div className="leading-none">
+              <span className="font-display text-xl font-bold tracking-tight text-foreground">
+                Clip Farmer
+              </span>
+              <span className="block text-[11px] font-semibold text-muted-foreground">
+                plant a video, harvest the clips
+              </span>
+            </div>
           </div>
           <ThemeToggle />
         </div>
 
-        <header className="flex animate-fade-in-up flex-col gap-7 border-b border-border pb-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="mb-3 font-mono text-xs uppercase tracking-[0.28em] text-primary">
-              [ Projects ]
+        {/* Hero */}
+        <header className="flex animate-fade-in-up flex-col gap-7 border-b border-border pb-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/12 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary">
+              <Sprout className="h-3.5 w-3.5" />
+              The fields
             </p>
-            <h1 className="font-display text-4xl font-extrabold uppercase leading-[0.95] tracking-tight text-foreground sm:text-6xl">
-              Cut the take.
+            <h1 className="font-display text-4xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl">
+              Plant a video.
               <br />
-              <span className="text-primary">Render</span> the clip.
+              <span className="text-primary">Harvest</span> the{" "}
+              <span className="text-accent">clips</span>.
             </h1>
-            <p className="mt-4 max-w-md text-sm leading-6 text-muted-foreground">
-              One source video per project. Mark a precise in-point, set a
-              duration, and render. No timelines to babysit.
+            <p className="mt-4 max-w-md text-base leading-7 text-muted-foreground">
+              One source video per field. Mark where to start, pick how long, and
+              Barnaby pulls a fresh clip — ready to download or share.
             </p>
           </div>
-          <div className="w-full max-w-md rounded-lg border border-border bg-card/80 p-3 shadow-panel backdrop-blur reg-frame relative">
-            <p className="mb-2 px-1 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-              New project
+
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-4 shadow-panel">
+            <p className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Plant a new field
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
-                aria-label="Project name"
-                placeholder="Untitled reel"
+                aria-label="Field name"
+                placeholder="Name your field…"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 onKeyDown={(event) => {
@@ -108,12 +115,12 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
                 variant="primary"
                 className="shrink-0"
               >
-                <FolderPlus className="h-4 w-4" />
-                {isCreating ? "Creating" : "Create"}
+                <Sprout className="h-4 w-4" />
+                {isCreating ? "Planting" : "Plant"}
               </Button>
             </div>
             {error ? (
-              <p className="mt-2 animate-fade-in font-mono text-xs text-destructive">
+              <p className="mt-2 animate-fade-in text-xs font-semibold text-destructive">
                 {error}
               </p>
             ) : null}
@@ -121,52 +128,54 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
         </header>
 
         {projects.length === 0 ? (
-          <section className="reg-frame relative grid min-h-[420px] animate-fade-in place-items-center rounded-lg border border-dashed border-border bg-card/40 text-center">
+          <section className="grid min-h-[420px] animate-fade-in place-items-center rounded-xl border border-dashed border-border bg-card/50 text-center">
             <div className="max-w-md px-6">
-              <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-lg border border-primary/30 bg-brand-soft shadow-lamp">
-                <Film className="h-7 w-7 text-primary" />
-              </div>
-              <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-foreground">
-                No reels yet
+              <BearFarmer size={120} className="mx-auto mb-5 animate-bob" />
+              <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+                The farm&apos;s quiet for now
               </h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Spin up a project, drop in a source video, and start pulling
-                clips into a reusable workspace.
+              <p className="mt-2 text-base leading-7 text-muted-foreground">
+                Plant your first field above, drop in a source video, and start
+                harvesting clips into a reusable workspace.
               </p>
             </div>
           </section>
         ) : (
-          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {projects.map((project, index) => (
               <Link
                 key={project.id}
                 href={`/projects/${project.id}`}
                 style={{ animationDelay: `${Math.min(index, 8) * 50}ms` }}
-                className="group relative animate-fade-in-up overflow-hidden rounded-lg border border-border bg-card p-4 transition duration-200 hover:-translate-y-1 hover:border-primary/50 hover:shadow-glow"
+                className="group relative animate-fade-in-up overflow-hidden rounded-xl border border-border bg-card p-5 shadow-soft transition duration-200 hover:-translate-y-1 hover:border-primary/50 hover:shadow-glow"
               >
-                <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 transition group-hover:opacity-100" />
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                      Reel {String(index + 1).padStart(2, "0")}
+                    <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                      Field {String(index + 1).padStart(2, "0")}
                     </p>
-                    <h2 className="truncate font-display text-lg font-bold uppercase tracking-tight text-foreground">
+                    <h2 className="truncate font-display text-lg font-bold tracking-tight text-foreground">
                       {project.name}
                     </h2>
-                    <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
-                      {project.video?.originalName ?? "— no source —"}
+                    <p className="mt-1 truncate text-sm text-muted-foreground">
+                      {project.video?.originalName ?? "— nothing planted yet —"}
                     </p>
                   </div>
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border bg-card-2 transition group-hover:border-primary/50">
-                    <Film className="h-5 w-5 text-primary" />
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border bg-brand-soft transition group-hover:border-primary/50">
+                    {project.video ? (
+                      <Film className="h-5 w-5 text-primary" />
+                    ) : (
+                      <Tractor className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
                 </div>
                 <div className="mt-5 flex items-center justify-between border-t border-border pt-3">
                   <Badge tone={project.video ? "success" : "neutral"}>
-                    {project.video ? "Loaded" : "Empty"}
+                    {project.video ? "Growing" : "Fallow"}
                   </Badge>
-                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                    {String(project._count.clips).padStart(2, "0")} clips
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    {project._count.clips}{" "}
+                    {project._count.clips === 1 ? "clip" : "clips"} harvested
                   </span>
                 </div>
               </Link>

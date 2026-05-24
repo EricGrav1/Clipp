@@ -6,10 +6,13 @@ import {
   Loader2,
   Pencil,
   Save,
+  Share2,
+  ShoppingBasket,
+  Sprout,
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +40,66 @@ export function ClipsPane({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [busyClipId, setBusyClipId] = useState<string | null>(null);
+  const [sharingClipId, setSharingClipId] = useState<string | null>(null);
+  const [isShareSupported, setIsShareSupported] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setIsShareSupported(typeof navigator.share === "function");
+  }, []);
+
+  async function shareClip(clip: ClipItem) {
+    setError("");
+
+    if (!clip.url) {
+      setError("This clip is not ready to share yet.");
+      return;
+    }
+
+    if (!isShareSupported) {
+      setError("Sharing is not supported in this browser. Download the clip instead.");
+      return;
+    }
+
+    setSharingClipId(clip.id);
+
+    try {
+      const response = await fetch(clip.url);
+
+      if (!response.ok) {
+        throw new Error("Could not load the clip for sharing.");
+      }
+
+      const blob = await response.blob();
+      const fileName = clip.url.split("/").pop() ?? "clip.mp4";
+      const file = new File([blob], fileName, {
+        type: blob.type || "video/mp4",
+      });
+      const shareData: ShareData = {
+        files: [file],
+        text: clip.title,
+        title: clip.title,
+      };
+
+      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+        throw new Error(
+          "This device cannot share video files from the browser. Download the clip instead.",
+        );
+      }
+
+      await navigator.share(shareData);
+    } catch (caughtError) {
+      if (caughtError instanceof DOMException && caughtError.name === "AbortError") {
+        return;
+      }
+
+      setError(
+        caughtError instanceof Error ? caughtError.message : "Could not share clip.",
+      );
+    } finally {
+      setSharingClipId(null);
+    }
+  }
 
   async function renameClip(clipId: string) {
     setError("");
@@ -103,39 +165,55 @@ export function ClipsPane({
   return (
     <aside className="flex min-h-[40vh] flex-col border-l border-border bg-card/60 backdrop-blur xl:min-h-screen">
       <header className="flex min-h-16 items-center justify-between border-b border-border px-4">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-            Output
-          </p>
-          <h2 className="font-display text-base font-bold uppercase tracking-tight text-foreground">
-            Render Bin
-          </h2>
+        <div className="flex items-center gap-2.5">
+          <ShoppingBasket className="h-5 w-5 text-primary" />
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              The harvest
+            </p>
+            <h2 className="font-display text-base font-bold tracking-tight text-foreground">
+              Harvest Basket
+            </h2>
+          </div>
         </div>
-        <Badge tone="neutral">{String(clips.length).padStart(2, "0")}</Badge>
+        <Badge tone="neutral">{clips.length}</Badge>
       </header>
 
       <div className="flex-1 overflow-y-auto p-3">
         {error ? (
-          <p className="mb-3 animate-fade-in rounded-md border border-destructive/35 bg-destructive/10 p-3 font-mono text-xs text-destructive">
+          <p className="mb-3 animate-fade-in rounded-lg border border-destructive/35 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
             {error}
           </p>
         ) : null}
 
         {clips.length === 0 ? (
-          <div className="reg-frame relative grid min-h-64 place-items-center rounded-lg border border-dashed border-border p-6 text-center">
-            <p className="max-w-56 text-sm leading-6 text-muted-foreground">
-              Rendered clips land here — preview, rename, download, or delete each
-              one.
-            </p>
+          <div className="grid min-h-64 place-items-center rounded-xl border border-dashed border-border p-6 text-center">
+            <div>
+              <Sprout className="mx-auto mb-3 h-8 w-8 animate-sway text-primary/70" />
+              <p className="mx-auto max-w-56 text-sm leading-6 text-muted-foreground">
+                Your harvested clips land here — preview, rename, download, share,
+                or compost each one.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
             {clips.map((clip) => {
               const isEditing = editingId === clip.id;
               const isBusy = busyClipId === clip.id;
+              const isSharing = sharingClipId === clip.id;
               const isReady = clip.status === "READY" && clip.url;
               const isProcessing =
                 clip.status !== "READY" && clip.status !== "FAILED";
+              const statusLabel =
+                clip.status === "READY"
+                  ? "ripe"
+                  : clip.status === "FAILED"
+                    ? "wilted"
+                    : "growing";
+              const shareTitle = isShareSupported
+                ? "Share clip"
+                : "Sharing is unavailable in this browser";
 
               return (
                 <article
@@ -156,11 +234,11 @@ export function ClipsPane({
                           }}
                         />
                       ) : (
-                        <h3 className="truncate font-display text-sm font-bold uppercase tracking-tight text-foreground">
+                        <h3 className="truncate font-display text-base font-bold tracking-tight text-foreground">
                           {clip.title}
                         </h3>
                       )}
-                      <p className="mt-1.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                      <p className="mt-1 font-mono text-[11px] tabular-nums text-muted-foreground">
                         {formatTime(clip.startTime)}–{formatTime(clip.endTime)}
                         {"  ·  "}
                         {formatDuration(clip.duration)}
@@ -176,7 +254,7 @@ export function ClipsPane({
                       }
                       className={isProcessing ? "animate-glow-pulse" : undefined}
                     >
-                      {clip.status.toLowerCase()}
+                      {statusLabel}
                     </Badge>
                   </div>
 
@@ -186,7 +264,7 @@ export function ClipsPane({
                     </p>
                   ) : null}
 
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-5 gap-2">
                     <Button
                       disabled={!isReady}
                       onClick={() => setPreviewClip(clip)}
@@ -207,6 +285,19 @@ export function ClipsPane({
                         <Download className="h-4 w-4" />
                       </Button>
                     )}
+                    <Button
+                      disabled={!isReady || isSharing || !isShareSupported}
+                      onClick={() => shareClip(clip)}
+                      size="icon"
+                      title={shareTitle}
+                      variant="secondary"
+                    >
+                      {isSharing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Share2 className="h-4 w-4" />
+                      )}
+                    </Button>
                     {isEditing ? (
                       <Button
                         disabled={isBusy}
@@ -267,14 +358,14 @@ export function ClipsPane({
             }
           }}
         >
-          <div className="reg-frame relative w-full max-w-3xl animate-scale-in rounded-lg border border-border bg-card p-4 shadow-panel">
+          <div className="relative w-full max-w-3xl animate-scale-in rounded-xl border border-border bg-card p-4 shadow-panel">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.24em] text-primary">
-                  <span className="h-1.5 w-1.5 animate-rec-pulse rounded-full bg-primary" />
-                  Preview
+                <p className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary">
+                  <Sprout className="h-3.5 w-3.5" />
+                  Fresh harvest
                 </p>
-                <h3 className="truncate font-display text-lg font-bold uppercase tracking-tight">
+                <h3 className="truncate font-display text-lg font-bold tracking-tight">
                   {previewClip.title}
                 </h3>
                 <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
