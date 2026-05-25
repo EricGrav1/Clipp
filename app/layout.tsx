@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Fredoka, Nunito, IBM_Plex_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import "./globals.css";
@@ -50,6 +51,8 @@ export default function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const app = <ThemeProvider>{children}</ThemeProvider>;
+
   return (
     <html
       lang="en"
@@ -60,7 +63,11 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="font-sans antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+        {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
+          <ClerkProvider>{app}</ClerkProvider>
+        ) : (
+          app
+        )}
       </body>
     </html>
   );

@@ -1,10 +1,10 @@
-import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
-import { ensureMediaDirectories, safeJoin, unlinkIfPresent } from "@/lib/files";
-import { renderClip } from "@/lib/ffmpeg";
-import { CLIPS_DIR, toPublicClipUrl } from "@/lib/paths";
+import { requireUserAccount } from "@/lib/auth";
+import { requireRenderEntitlement } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
+import { processRenderJob } from "@/lib/render-jobs";
+import { deleteStoredMedia, prepareClipOutput } from "@/lib/storage";
 import {
   assertClipDuration,
   assertFiniteSeconds,
@@ -20,8 +20,9 @@ export async function GET(
 ) {
   try {
     const { projectId } = await params;
+    const account = await requireUserAccount();
     const clips = await prisma.clip.findMany({
-      where: { projectId },
+      where: { projectId, project: { userAccountId: account.id } },
       orderBy: { createdAt: "desc" },
     });
 
@@ -41,12 +42,13 @@ export async function POST(
 
   try {
     const body = await request.json();
+    const account = await requireUserAccount();
     const requestedStart = assertFiniteSeconds(body.startTime, "Start time");
     const videoDuration = assertFiniteSeconds(body.videoDuration, "Video duration");
     const selectedDuration = assertClipDuration(body.duration, videoDuration);
 
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userAccountId: account.id },
       include: { video: true },
     });
 
@@ -66,9 +68,10 @@ export async function POST(
       throw new ValidationError("Move the playhead before the end of the video.");
     }
 
-    await ensureMediaDirectories();
-    const fileName = `${randomUUID()}.mp4`;
-    outputPath = safeJoin(CLIPS_DIR, fileName);
+    requireRenderEntitlement(account, duration);
+
+    const clipOutput = await prepareClipOutput();
+    outputPath = clipOutput.outputPath;
 
     const clip = await prisma.clip.create({
       data: {
@@ -78,47 +81,34 @@ export async function POST(
         startTime,
         endTime,
         duration,
-        status: "RENDERING",
-        fileName,
-        url: toPublicClipUrl(fileName),
+        status: "QUEUED",
+        fileName: clipOutput.fileName,
+        url: clipOutput.url,
         path: outputPath,
+        objectKey: clipOutput.objectKey,
+        storageProvider: clipOutput.provider,
       },
     });
     clipId = clip.id;
+    const renderJob = await prisma.renderJob.create({
+      data: {
+        clipId: clip.id,
+        status: "QUEUED",
+      },
+    });
 
     await prisma.video.update({
       where: { id: project.video.id },
       data: { durationSeconds: videoDuration },
     });
 
-    try {
-      await renderClip({
-        inputPath: project.video.path,
-        outputPath,
-        startTime,
-        duration,
-      });
-    } catch (error) {
-      await unlinkIfPresent(outputPath);
-      const failedClip = await prisma.clip.update({
-        where: { id: clip.id },
-        data: {
-          status: "FAILED",
-          error:
-            error instanceof Error
-              ? error.message.slice(0, 1200)
-              : "FFmpeg render failed.",
-        },
-      });
-      return NextResponse.json({ clip: failedClip }, { status: 201 });
-    }
+    await processRenderJob(renderJob.id).catch(() => undefined);
 
-    const readyClip = await prisma.clip.update({
+    const renderedClip = await prisma.clip.findUniqueOrThrow({
       where: { id: clip.id },
-      data: { status: "READY", error: null },
     });
 
-    return NextResponse.json({ clip: readyClip }, { status: 201 });
+    return NextResponse.json({ clip: renderedClip }, { status: 201 });
   } catch (error) {
     if (clipId) {
       await prisma.clip
@@ -132,7 +122,7 @@ export async function POST(
         })
         .catch(() => undefined);
     }
-    await unlinkIfPresent(outputPath).catch(() => undefined);
+    await deleteStoredMedia({ path: outputPath }).catch(() => undefined);
     return jsonError(error);
   }
 }

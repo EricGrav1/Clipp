@@ -8,13 +8,37 @@ datasource db {
 }
 
 model Project {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userAccountId String?
+  name          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  userAccount UserAccount? @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
   video Video?
   clips Clip[]
+
+  @@index([userAccountId, updatedAt])
+}
+
+model UserAccount {
+  id                   String   @id @default(cuid())
+  clerkUserId          String   @unique
+  email                String?
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  subscriptionStatus   String   @default("inactive")
+  stripePriceId        String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  renderMinutesLimit   Int      @default(120)
+  renderSecondsUsed    Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  projects Project[]
+  socialConnections SocialConnection[]
+  scheduledPosts ScheduledPost[]
 }
 
 model Video {
@@ -24,7 +48,9 @@ model Video {
   mimeType        String
   fileName        String
   url             String
-  path            String
+  path            String?
+  objectKey       String?
+  storageProvider String @default("local")
   sizeBytes       Int
   durationSeconds Float?
   createdAt       DateTime @default(now())
@@ -46,12 +72,74 @@ model Clip {
   fileName  String?
   url       String?
   path      String?
+  objectKey String?
+  storageProvider String @default("local")
   error     String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   video   Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  renderJob RenderJob?
+  scheduledPosts ScheduledPost[]
 
   @@index([projectId, createdAt])
+}
+
+model RenderJob {
+  id        String   @id @default(cuid())
+  clipId    String   @unique
+  status    String   @default("QUEUED")
+  attempts  Int      @default(0)
+  error     String?
+  queuedAt  DateTime @default(now())
+  startedAt DateTime?
+  finishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clip Clip @relation(fields: [clipId], references: [id], onDelete: Cascade)
+}
+
+model SocialConnection {
+  id                 String   @id @default(cuid())
+  userAccountId      String
+  provider           String   @default("ayrshare")
+  providerProfileId  String?
+  providerProfileKey String?
+  connectedPlatforms String   @default("[]")
+  status             String   @default("DISCONNECTED")
+  metadata           String   @default("{}")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  userAccount UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([userAccountId, provider])
+  @@index([providerProfileId])
+}
+
+model ScheduledPost {
+  id                String   @id @default(cuid())
+  userAccountId     String
+  clipId            String
+  provider          String   @default("ayrshare")
+  providerPostId    String?
+  selectedPlatforms String
+  sharedCaption     String
+  platformOverrides String   @default("{}")
+  scheduledAt       DateTime
+  timezone          String
+  status            String   @default("SCHEDULING")
+  providerResponse  String   @default("{}")
+  failureReason     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  userAccount UserAccount @relation(fields: [userAccountId], references: [id], onDelete: Cascade)
+  clip        Clip        @relation(fields: [clipId], references: [id], onDelete: Cascade)
+
+  @@index([userAccountId, scheduledAt])
+  @@index([clipId, scheduledAt])
+  @@index([providerPostId])
 }

@@ -161,7 +161,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
           <header className="flex min-h-16 items-center justify-between gap-4 border-b border-border px-4 sm:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <Button asChild size="icon" variant="ghost" title="Back">
-                <Link href="/" aria-label="Back to projects">
+                <Link href="/app" aria-label="Back to projects">
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
               </Button>

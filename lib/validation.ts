@@ -6,7 +6,12 @@ const ALLOWED_VIDEO_MIME_TYPES = new Set([
 const ALLOWED_VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".webm"]);
 
 export class ValidationError extends Error {
-  status = 400;
+  status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
 }
 
 export function assertProjectName(value: unknown) {

@@ -1,10 +1,8 @@
-import { writeFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
-import { ensureMediaDirectories, safeJoin, unlinkIfPresent } from "@/lib/files";
-import { UPLOADS_DIR, toPublicUploadUrl } from "@/lib/paths";
+import { requireUserAccount } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteStoredMedia, storeUploadedVideo } from "@/lib/storage";
 import { assertVideoFile, getVideoExtension, ValidationError } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -15,10 +13,11 @@ export async function POST(
 ) {
   try {
     const { projectId } = await params;
+    const account = await requireUserAccount();
     const formData = await request.formData();
     const file = assertVideoFile(formData.get("video") as File | null);
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userAccountId: account.id },
       include: {
         video: true,
         clips: true,
@@ -29,17 +28,12 @@ export async function POST(
       throw new ValidationError("Project not found.");
     }
 
-    await ensureMediaDirectories();
-
     const extension = getVideoExtension(file.name);
-    const fileName = `${randomUUID()}${extension}`;
-    const filePath = safeJoin(UPLOADS_DIR, fileName);
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const storedVideo = await storeUploadedVideo(file, extension);
 
-    await writeFile(filePath, buffer);
     await Promise.all([
-      unlinkIfPresent(project.video?.path),
-      ...project.clips.map((clip) => unlinkIfPresent(clip.path)),
+      deleteStoredMedia(project.video ?? {}),
+      ...project.clips.map((clip) => deleteStoredMedia(clip)),
     ]);
 
     await prisma.clip.deleteMany({ where: { projectId } });
@@ -49,17 +43,21 @@ export async function POST(
         projectId,
         originalName: file.name,
         mimeType: file.type,
-        fileName,
-        url: toPublicUploadUrl(fileName),
-        path: filePath,
+        fileName: storedVideo.fileName,
+        url: storedVideo.url,
+        path: storedVideo.path,
+        objectKey: storedVideo.objectKey,
+        storageProvider: storedVideo.provider,
         sizeBytes: file.size,
       },
       update: {
         originalName: file.name,
         mimeType: file.type,
-        fileName,
-        url: toPublicUploadUrl(fileName),
-        path: filePath,
+        fileName: storedVideo.fileName,
+        url: storedVideo.url,
+        path: storedVideo.path,
+        objectKey: storedVideo.objectKey,
+        storageProvider: storedVideo.provider,
         sizeBytes: file.size,
         durationSeconds: null,
       },

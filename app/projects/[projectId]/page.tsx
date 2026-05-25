@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { EditorWorkspace } from "@/components/editor-workspace";
+import { requireUserAccount } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +11,9 @@ export default async function ProjectPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
+  const account = await requireUserAccount();
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, userAccountId: account.id },
     include: {
       video: true,
       clips: {

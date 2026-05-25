@@ -71,7 +71,15 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
               </span>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <Button asChild variant="secondary">
+              <Link href="/schedule">Schedule</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/account">Account</Link>
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Hero */}
