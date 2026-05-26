@@ -12,6 +12,7 @@ import {
   Sprout,
   TrendingUp,
 } from "lucide-react";
+import { AuthNav } from "@/components/auth-nav";
 import { CheckoutButton } from "@/components/billing-actions";
 import { Button } from "@/components/ui/button";
 import { BearFarmer } from "@/components/ui/mascot";
@@ -85,14 +86,9 @@ export default function LandingPage() {
             <a href="#examples">Examples</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost">
-              <Link href="/sign-in">Log in</Link>
-            </Button>
-            <div className="hidden sm:block">
-              <Button asChild variant="primary">
-                <Link href="/sign-up">Start harvesting</Link>
-              </Button>
-            </div>
+            <AuthNav
+              isClerkEnabled={Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)}
+            />
           </div>
         </div>
       </header>
