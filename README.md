@@ -7,7 +7,7 @@ Paid SaaS foundation for clipping long-form creator and podcast videos into reus
 ```bash
 npm install
 cp .env.example .env
-npm run db:init
+DATABASE_URL="your-postgres-connection-string" npm run db:deploy
 npx prisma generate
 npm run dev
 ```
@@ -20,13 +20,13 @@ Set `FOUNDER_EMAIL` before enabling Clerk if you want the first founder login to
 
 ## Database
 
-The SQLite development database lives at `prisma/dev.db` through:
+Clip Farmer uses Postgres through:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://..."
 ```
 
-The initial schema SQL is checked in at `prisma/migrations/20260523150100_init/migration.sql`, with SaaS account/billing/render-job additions in `prisma/migrations/20260524000100_saas_foundations/migration.sql` and social scheduling additions in `prisma/migrations/20260524000200_social_scheduling/migration.sql`. `npm run db:init` creates the local database from the initial migration; run `npx prisma db push` after pulling schema changes.
+The production migration SQL is checked in under `prisma/migrations`. Run `npm run db:deploy` after setting `DATABASE_URL`.
 
 ## Social Scheduling
 
@@ -52,7 +52,7 @@ Clip rendering expects `ffmpeg` to be installed and available on `PATH`.
 - Use Clerk for auth and protect `/app`, `/projects`, account, and API routes.
 - Use Stripe Checkout Sessions in subscription mode and configure the webhook at `/api/billing/webhook`.
 - Create Coupons and Promotion Codes in Stripe Dashboard for campaigns; Checkout has promotion-code entry enabled for subscriptions.
-- Use a hosted Postgres database for production instead of SQLite.
+- Use a hosted Postgres database such as Neon for production.
 - Use Cloudflare R2 or S3-compatible object storage for source videos and clips.
 - Run FFmpeg rendering in a separate worker for production. The worker can call `/api/internal/render-jobs/[jobId]` with `x-render-worker-secret`.
 - Configure Ayrshare webhooks at `/api/social/webhook` and send `x-social-webhook-secret` when `SOCIAL_WEBHOOK_SECRET` is set.
