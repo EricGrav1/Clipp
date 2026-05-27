@@ -137,63 +137,6 @@ export default function LandingPage() {
               )}
             </div>
           </div>
-
-          <div className="pointer-events-none relative hidden min-h-[440px] animate-fade-in opacity-0 lg:block">
-            <div className="absolute bottom-0 right-0 hidden h-80 w-[38%] rounded-t-[34px] border border-[hsl(20_48%_33%)] bg-[linear-gradient(90deg,hsl(9_72%_49%),hsl(12_74%_42%))] shadow-panel lg:block">
-              <div className="mx-auto mt-8 h-14 w-16 rounded-t-full border-4 border-[hsl(38_62%_86%)] bg-[hsl(38_36%_25%)]" />
-              <div className="absolute bottom-10 left-1/2 h-24 w-32 -translate-x-1/2 rounded-lg border-4 border-[hsl(38_62%_86%)] bg-[hsl(12_62%_38%)]" />
-            </div>
-            <div className="absolute right-2 top-10 hidden h-72 w-24 rounded-full border border-border bg-card/70 lg:block" />
-
-            <div className="absolute bottom-1 left-0 right-[18%] rounded-[2rem] border border-border bg-card/86 p-5 shadow-panel backdrop-blur">
-              <div className="grid min-h-56 place-items-center rounded-[1.5rem] border border-border bg-[radial-gradient(circle_at_50%_0%,hsl(var(--warning)/0.34),transparent_46%),linear-gradient(180deg,hsl(var(--primary)/0.16),hsl(var(--card-2)))] p-5">
-                <div className="relative h-52 w-full max-w-lg">
-                  <div className="absolute bottom-6 left-12 h-20 w-[72%] rounded-[1.5rem] bg-[hsl(25_68%_42%)] shadow-soft" />
-                  <div className="absolute bottom-2 left-20 h-16 w-16 rounded-full border-[10px] border-[hsl(25_34%_18%)] bg-[hsl(33_60%_54%)]" />
-                  <div className="absolute bottom-10 left-20 right-20 grid grid-cols-7 items-end gap-2">
-                    {Array.from({ length: 7 }).map((_, index) => (
-                      <span
-                        key={index}
-                        className="h-28 origin-bottom animate-sway rounded-full bg-[linear-gradient(180deg,hsl(var(--primary)),hsl(84_54%_37%))]"
-                        style={{ animationDelay: `${index * 160}ms` }}
-                      />
-                    ))}
-                  </div>
-                  {[
-                    ["Perfect Hook", "00:29", "850K", "left-2 top-2 -rotate-6"],
-                    ["Viral Moment", "00:45", "1.2M", "left-[34%] -top-4 rotate-3"],
-                    ["Big Insight", "00:52", "right-0 top-5 rotate-6"],
-                  ].map(([label, time, views, position]) => (
-                    <div
-                      key={label}
-                      className={`absolute ${position} w-36 rounded-2xl border border-border bg-card p-2 shadow-panel`}
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-extrabold text-accent-foreground">
-                          {label}
-                        </span>
-                        <span className="rounded-full bg-foreground px-1.5 py-0.5 font-mono text-[10px] text-background">
-                          {time}
-                        </span>
-                      </div>
-                      <div className="grid aspect-[4/3] place-items-center rounded-xl bg-[linear-gradient(135deg,hsl(var(--sky)/0.75),hsl(var(--primary)/0.45))]">
-                        <Play className="h-7 w-7 fill-white text-white" />
-                      </div>
-                      <p className="mt-1 text-[11px] font-extrabold text-muted-foreground">
-                        {views} views
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute bottom-8 right-0 max-w-56 rotate-1 rounded-xl border border-[hsl(33_38%_32%)] bg-[hsl(31_34%_18%)] p-5 text-center text-warning shadow-panel">
-              <p className="font-display text-xl font-bold leading-tight">
-                Turn long content into short gold.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
