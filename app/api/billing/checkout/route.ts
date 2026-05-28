@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       allow_promotion_codes: true,
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: appUrl("/checkout/success?session_id={CHECKOUT_SESSION_ID}"),
+      success_url: appUrl("/onboarding?session_id={CHECKOUT_SESSION_ID}"),
       cancel_url: appUrl("/pricing"),
       client_reference_id: account.id,
       subscription_data: {

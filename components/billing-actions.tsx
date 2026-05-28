@@ -1,6 +1,8 @@
 "use client";
 
+import { SignUpButton, useUser } from "@clerk/nextjs";
 import { CreditCard, Loader2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -25,9 +27,84 @@ export function CheckoutButton({
   className,
   interval = "monthly",
 }: {
-  children?: string;
+  children?: ReactNode;
   className?: string;
   interval?: "monthly" | "yearly";
+}) {
+  const isClerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+
+  if (isClerkEnabled) {
+    return (
+      <ClerkCheckoutButton className={className} interval={interval}>
+        {children}
+      </ClerkCheckoutButton>
+    );
+  }
+
+  return (
+    <DirectCheckoutButton className={className} interval={interval}>
+      {children}
+    </DirectCheckoutButton>
+  );
+}
+
+function ClerkCheckoutButton({
+  children,
+  className,
+  interval,
+}: {
+  children: ReactNode;
+  className?: string;
+  interval: "monthly" | "yearly";
+}) {
+  const { isLoaded, isSignedIn } = useUser();
+  const checkoutPath = `/checkout?interval=${interval}`;
+
+  if (!isLoaded) {
+    return (
+      <div className={className}>
+        <Button disabled variant="primary">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {children}
+        </Button>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className={className}>
+        <SignUpButton
+          fallbackRedirectUrl={checkoutPath}
+          forceRedirectUrl={checkoutPath}
+          mode="modal"
+          signInFallbackRedirectUrl={checkoutPath}
+          signInForceRedirectUrl={checkoutPath}
+        >
+          <Button variant="primary">
+            <CreditCard className="h-4 w-4" />
+            {children}
+          </Button>
+        </SignUpButton>
+      </div>
+    );
+  }
+
+  return (
+    <DirectCheckoutButton className={className} interval={interval}>
+      {children}
+    </DirectCheckoutButton>
+  );
+}
+
+function DirectCheckoutButton({
+  children,
+  className,
+  interval,
+}: {
+  children: ReactNode;
+  className?: string;
+  interval: "monthly" | "yearly";
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

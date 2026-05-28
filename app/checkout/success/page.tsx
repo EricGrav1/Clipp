@@ -12,11 +12,11 @@ export default function CheckoutSuccessPage() {
           Your clip field is ready.
         </h1>
         <p className="mt-4 leading-7 text-muted-foreground">
-          Stripe is confirming the subscription. If access does not update
-          immediately, refresh after the webhook lands.
+          Stripe is confirming the subscription. Finish the quick setup so your
+          workspace starts with the right defaults.
         </p>
         <Button asChild className="mt-6" variant="primary">
-          <Link href="/app">Open Clip Farmer</Link>
+          <Link href="/onboarding">Continue setup</Link>
         </Button>
       </section>
     </main>

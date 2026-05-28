@@ -8,6 +8,7 @@ const isClerkConfigured = Boolean(
 const isProtectedRoute = createRouteMatcher([
   "/app(.*)",
   "/account(.*)",
+  "/onboarding(.*)",
   "/schedule(.*)",
   "/projects(.*)",
 ]);
