@@ -10,13 +10,6 @@ const isProtectedRoute = createRouteMatcher([
   "/account(.*)",
   "/schedule(.*)",
   "/projects(.*)",
-  "/api/projects(.*)",
-  "/api/clips(.*)",
-  "/api/billing/checkout(.*)",
-  "/api/billing/portal(.*)",
-  "/api/scheduled-posts(.*)",
-  "/api/social/accounts(.*)",
-  "/api/social/connect(.*)",
 ]);
 
 const middleware = isClerkConfigured

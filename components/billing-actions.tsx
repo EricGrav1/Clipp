@@ -4,6 +4,22 @@ import { CreditCard, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
+async function readJsonPayload(response: Response, fallback: string) {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return response.json() as Promise<{ error?: string; url?: string }>;
+  }
+
+  const text = await response.text().catch(() => "");
+
+  if (text.includes("<!DOCTYPE")) {
+    throw new Error(fallback);
+  }
+
+  throw new Error(text || fallback);
+}
+
 export function CheckoutButton({
   children = "Start subscription",
   className,
@@ -26,7 +42,10 @@ export function CheckoutButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ interval }),
       });
-      const payload = await response.json();
+      const payload = await readJsonPayload(
+        response,
+        "Checkout hit a server error. Refresh and try again.",
+      );
 
       if (!response.ok || !payload.url) {
         throw new Error(payload.error ?? "Could not start checkout.");
@@ -68,7 +87,10 @@ export function BillingPortalButton() {
 
     try {
       const response = await fetch("/api/billing/portal", { method: "POST" });
-      const payload = await response.json();
+      const payload = await readJsonPayload(
+        response,
+        "Billing hit a server error. Refresh and try again.",
+      );
 
       if (!response.ok || !payload.url) {
         throw new Error(payload.error ?? "Could not open billing portal.");
