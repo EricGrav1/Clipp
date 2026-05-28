@@ -11,6 +11,8 @@ const PRICE_IDS = {
   yearly: "STRIPE_YEARLY_PRICE_ID",
 } as const;
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const account = await requireUserAccount();

@@ -5,6 +5,8 @@ import { getStripe } from "@/lib/stripe";
 import { appUrl } from "@/lib/url";
 import { ValidationError } from "@/lib/validation";
 
+export const runtime = "nodejs";
+
 export async function POST() {
   try {
     const account = await requireUserAccount();
