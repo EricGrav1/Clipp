@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { assertProjectName } from "@/lib/validation";
 
@@ -9,6 +10,8 @@ export const runtime = "nodejs";
 export async function GET() {
   try {
     const account = await requireUserAccount();
+    requireActiveSubscription(account);
+
     const projects = await prisma.project.findMany({
       where: { userAccountId: account.id },
       orderBy: { updatedAt: "desc" },
@@ -29,6 +32,8 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const account = await requireUserAccount();
+    requireActiveSubscription(account);
+
     const body = await request.json();
     const name = assertProjectName(body.name);
     const project = await prisma.project.create({

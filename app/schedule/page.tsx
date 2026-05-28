@@ -4,13 +4,20 @@ import { Button } from "@/components/ui/button";
 import { BearFarmer } from "@/components/ui/mascot";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { requireUserAccount } from "@/lib/auth";
+import { hasActiveSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { toScheduledPostDTO } from "@/lib/social";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function SchedulePage() {
   const account = await requireUserAccount();
+
+  if (!hasActiveSubscription(account)) {
+    redirect("/pricing?required=subscription");
+  }
+
   const posts = await prisma.scheduledPost.findMany({
     where: { userAccountId: account.id },
     orderBy: { scheduledAt: "asc" },

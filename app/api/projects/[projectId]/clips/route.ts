@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
-import { requireRenderEntitlement } from "@/lib/billing";
+import { requireActiveSubscription, requireRenderEntitlement } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { processRenderJob } from "@/lib/render-jobs";
 import { deleteStoredMedia, prepareClipOutput } from "@/lib/storage";
@@ -21,6 +21,8 @@ export async function GET(
   try {
     const { projectId } = await params;
     const account = await requireUserAccount();
+    requireActiveSubscription(account);
+
     const clips = await prisma.clip.findMany({
       where: { projectId, project: { userAccountId: account.id } },
       orderBy: { createdAt: "desc" },

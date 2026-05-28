@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/billing";
 import { getSocialConnections, SOCIAL_PLATFORMS } from "@/lib/social";
 
 export const runtime = "nodejs";
@@ -9,6 +10,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const account = await requireUserAccount();
+    requireActiveSubscription(account);
+
     const connections = await getSocialConnections(account);
 
     return NextResponse.json({

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ValidationError } from "@/lib/validation";
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active"]);
+const DEFAULT_FOUNDER_EMAIL = "EricGrav1@icloud.com";
 
 export function isBillingConfigured() {
   return Boolean(
@@ -12,11 +13,30 @@ export function isBillingConfigured() {
 }
 
 export function hasActiveSubscription(account: UserAccount) {
+  if (isFounderAccount(account)) {
+    return true;
+  }
+
   if (!isBillingConfigured()) {
     return true;
   }
 
   return ACTIVE_SUBSCRIPTION_STATUSES.has(account.subscriptionStatus);
+}
+
+export function isFounderAccount(account: UserAccount) {
+  const founderEmail = process.env.FOUNDER_EMAIL ?? DEFAULT_FOUNDER_EMAIL;
+
+  return account.email?.toLowerCase() === founderEmail.toLowerCase();
+}
+
+export function requireActiveSubscription(
+  account: UserAccount,
+  message = "Subscribe to use Clip Farmer.",
+) {
+  if (!hasActiveSubscription(account)) {
+    throw new ValidationError(message, 402);
+  }
 }
 
 export function getRemainingRenderSeconds(account: UserAccount) {

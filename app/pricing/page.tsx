@@ -11,7 +11,14 @@ const features = [
   "Native share support where browsers allow it",
 ];
 
-export default function PricingPage() {
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ required?: string }>;
+}) {
+  const { required } = await searchParams;
+  const isSubscriptionRequired = required === "subscription";
+
   return (
     <main className="min-h-screen px-5 py-8 sm:px-8">
       <div className="mx-auto max-w-5xl">
@@ -23,6 +30,12 @@ export default function PricingPage() {
             <Link href="/app">Open app</Link>
           </Button>
         </div>
+
+        {isSubscriptionRequired ? (
+          <div className="mb-8 rounded-2xl border border-primary/45 bg-primary/12 px-5 py-4 text-sm font-semibold text-foreground">
+            Choose a plan to unlock the Clip Farmer workspace.
+          </div>
+        ) : null}
 
         <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>

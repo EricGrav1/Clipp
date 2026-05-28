@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import {
   cancelWithProvider,
@@ -18,6 +19,8 @@ export async function PATCH(
   try {
     const { postId } = await params;
     const account = await requireUserAccount();
+    requireActiveSubscription(account);
+
     const body = await request.json();
     const action = typeof body.action === "string" ? body.action : "";
     const post = await prisma.scheduledPost.findFirst({

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { deleteStoredMedia } from "@/lib/storage";
 import { assertClipTitle, ValidationError } from "@/lib/validation";
@@ -14,6 +15,8 @@ export async function PATCH(
   try {
     const { clipId } = await params;
     const account = await requireUserAccount();
+    requireActiveSubscription(account);
+
     const body = await request.json();
     const title = assertClipTitle(body.title);
     const existingClip = await prisma.clip.findFirst({
@@ -42,6 +45,8 @@ export async function DELETE(
   try {
     const { clipId } = await params;
     const account = await requireUserAccount();
+    requireActiveSubscription(account);
+
     const clip = await prisma.clip.findFirst({
       where: { id: clipId, project: { userAccountId: account.id } },
     });

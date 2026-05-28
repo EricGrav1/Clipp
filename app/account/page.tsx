@@ -13,7 +13,7 @@ export default async function AccountPage() {
   const account = await requireUserAccount();
   const hasSubscription = hasActiveSubscription(account);
   const remainingSeconds = getRemainingRenderSeconds(account);
-  const socialConnections = await getSocialConnections(account);
+  const socialConnections = hasSubscription ? await getSocialConnections(account) : [];
 
   return (
     <main className="min-h-screen px-5 py-8 sm:px-8">
@@ -76,7 +76,9 @@ export default async function AccountPage() {
           </div>
         </section>
 
-        <SocialAccountsPanel initialConnections={socialConnections} />
+        {hasSubscription ? (
+          <SocialAccountsPanel initialConnections={socialConnections} />
+        ) : null}
       </div>
     </main>
   );

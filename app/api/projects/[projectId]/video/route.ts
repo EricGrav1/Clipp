@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
+import { requireActiveSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { deleteStoredMedia, storeUploadedVideo } from "@/lib/storage";
 import { assertVideoFile, getVideoExtension, ValidationError } from "@/lib/validation";
@@ -14,6 +15,8 @@ export async function POST(
   try {
     const { projectId } = await params;
     const account = await requireUserAccount();
+    requireActiveSubscription(account);
+
     const formData = await request.formData();
     const file = assertVideoFile(formData.get("video") as File | null);
     const project = await prisma.project.findFirst({
