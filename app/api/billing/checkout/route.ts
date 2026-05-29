@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
-import { getStripeSecretKey, STRIPE_API_VERSION } from "@/lib/stripe";
+import {
+  getStripePriceId,
+  getStripeSecretKey,
+  STRIPE_API_VERSION,
+} from "@/lib/stripe";
 import { appUrl } from "@/lib/url";
 import { ValidationError } from "@/lib/validation";
 
@@ -46,13 +50,14 @@ async function createCheckoutSession({
     params.set("customer_email", customerEmail);
   }
 
+  const secretKey = getStripeSecretKey();
   let response: Response;
 
   try {
     response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${getStripeSecretKey()}`,
+        "Authorization": `Bearer ${secretKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
         "Stripe-Version": STRIPE_API_VERSION,
       },
@@ -90,12 +95,9 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const interval = body.interval === "yearly" ? "yearly" : "monthly";
     const priceEnvName = PRICE_IDS[interval];
-    const priceId = process.env[priceEnvName] ?? process.env.STRIPE_PRICE_ID;
-
-    if (!priceId) {
-      throw new ValidationError(`${priceEnvName} is not configured.`, 500);
-    }
-
+    const priceId = process.env[priceEnvName]?.trim()
+      ? getStripePriceId(priceEnvName)
+      : getStripePriceId("STRIPE_PRICE_ID");
     const url = await createCheckoutSession({
       clerkUserId: account.clerkUserId,
       customerEmail: account.email,
