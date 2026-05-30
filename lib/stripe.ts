@@ -16,7 +16,7 @@ export function getStripeSecretKey() {
   const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
 
   if (!secretKey) {
-    throw new ValidationError("Stripe checkout is not configured yet.", 500);
+    throw new ValidationError("STRIPE_SECRET_KEY is not configured.", 500);
   }
 
   assertAsciiEnvironmentValue("STRIPE_SECRET_KEY", secretKey);
