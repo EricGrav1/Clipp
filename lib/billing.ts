@@ -5,6 +5,10 @@ import { ValidationError } from "@/lib/validation";
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active"]);
 const DEFAULT_FOUNDER_EMAIL = "EricGrav1@icloud.com";
 
+function isLocalDevelopment() {
+  return process.env.NODE_ENV !== "production";
+}
+
 export function isBillingConfigured() {
   return Boolean(
     process.env.STRIPE_SECRET_KEY &&
@@ -18,7 +22,7 @@ export function hasActiveSubscription(account: UserAccount) {
   }
 
   if (!isBillingConfigured()) {
-    return true;
+    return isLocalDevelopment();
   }
 
   return ACTIVE_SUBSCRIPTION_STATUSES.has(account.subscriptionStatus);
