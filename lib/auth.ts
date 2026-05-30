@@ -5,17 +5,41 @@ import { ValidationError } from "@/lib/validation";
 const DEV_CLERK_USER_ID = "dev-user";
 const DEFAULT_FOUNDER_EMAIL = "EricGrav1@icloud.com";
 
-export function isClerkConfigured() {
+function isProduction() {
+  return process.env.NODE_ENV === "production";
+}
+
+function isPrintableAscii(value: string) {
+  return /^[\x20-\x7E]+$/.test(value);
+}
+
+function hasValidClerkEnvironment() {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
+  const secretKey = process.env.CLERK_SECRET_KEY?.trim();
+
   return Boolean(
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY,
+    publishableKey?.startsWith("pk_") &&
+      secretKey?.startsWith("sk_") &&
+      isPrintableAscii(publishableKey) &&
+      isPrintableAscii(secretKey),
   );
+}
+
+export function isClerkConfigured() {
+  return hasValidClerkEnvironment();
 }
 
 export async function requireUserAccount() {
   let clerkUserId = DEV_CLERK_USER_ID;
   let email: string | null = null;
 
-  if (isClerkConfigured()) {
+  const clerkConfigured = isClerkConfigured();
+
+  if (isProduction() && !clerkConfigured) {
+    throw new ValidationError("Authentication is not configured.", 500);
+  }
+
+  if (clerkConfigured) {
     const session = await auth();
 
     if (!session.userId) {
@@ -33,11 +57,11 @@ export async function requireUserAccount() {
     create: {
       clerkUserId,
       email,
-      subscriptionStatus: isClerkConfigured() ? "inactive" : "active",
+      subscriptionStatus: clerkConfigured ? "inactive" : "active",
     },
   });
 
-  if (!isClerkConfigured()) {
+  if (!clerkConfigured) {
     if (!account.email) {
       const updatedAccount = await prisma.userAccount.update({
         where: { id: account.id },

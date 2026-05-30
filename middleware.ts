@@ -1,9 +1,22 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const isClerkConfigured = Boolean(
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY,
-);
+function isPrintableAscii(value: string) {
+  return /^[\x20-\x7E]+$/.test(value);
+}
+
+function isClerkConfigured() {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
+  const secretKey = process.env.CLERK_SECRET_KEY?.trim();
+
+  return Boolean(
+    publishableKey?.startsWith("pk_") &&
+      secretKey?.startsWith("sk_") &&
+      isPrintableAscii(publishableKey) &&
+      isPrintableAscii(secretKey),
+  );
+}
 
 const isProtectedRoute = createRouteMatcher([
   "/app(.*)",
@@ -13,13 +26,17 @@ const isProtectedRoute = createRouteMatcher([
   "/projects(.*)",
 ]);
 
-const middleware = isClerkConfigured
+const middleware = isClerkConfigured()
   ? clerkMiddleware(async (auth, request) => {
       if (isProtectedRoute(request)) {
         await auth.protect();
       }
     })
-  : function localDevMiddleware() {
+  : function missingClerkMiddleware(request: NextRequest) {
+      if (process.env.NODE_ENV === "production" && isProtectedRoute(request)) {
+        return NextResponse.redirect(new URL("/?auth=configuration", request.url));
+      }
+
       return NextResponse.next();
     };
 
