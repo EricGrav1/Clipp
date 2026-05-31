@@ -128,17 +128,37 @@ async function updateAccountFromStripeSubscription({
 }) {
   const snapshot = getSubscriptionSnapshot(subscription);
 
-  return prisma.userAccount.update({
-    where: { id: accountId },
-    data: {
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscription.id,
-      subscriptionStatus: snapshot.status,
-      stripePriceId: snapshot.priceId,
-      currentPeriodStart: snapshot.currentPeriodStart,
-      currentPeriodEnd: snapshot.currentPeriodEnd,
-      renderSecondsUsed: 0,
-    },
+  return prisma.$transaction(async (tx) => {
+    await tx.userAccount.updateMany({
+      where: {
+        id: { not: accountId },
+        OR: [
+          ...(customerId ? [{ stripeCustomerId: customerId }] : []),
+          { stripeSubscriptionId: subscription.id },
+        ],
+      },
+      data: {
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        subscriptionStatus: "inactive",
+        stripePriceId: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+      },
+    });
+
+    return tx.userAccount.update({
+      where: { id: accountId },
+      data: {
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscription.id,
+        subscriptionStatus: snapshot.status,
+        stripePriceId: snapshot.priceId,
+        currentPeriodStart: snapshot.currentPeriodStart,
+        currentPeriodEnd: snapshot.currentPeriodEnd,
+        renderSecondsUsed: 0,
+      },
+    });
   });
 }
 
@@ -173,6 +193,7 @@ export async function syncCheckoutSessionSubscription(
   }
 
   const params = new URLSearchParams();
+  params.append("expand[]", "customer");
   params.append("expand[]", "subscription");
 
   const session = await stripeGet<StripeCheckoutSessionResponse>(
@@ -180,7 +201,15 @@ export async function syncCheckoutSessionSubscription(
     params,
   );
 
-  if (session.client_reference_id !== account.id) {
+  const customerEmail =
+    session.customer && typeof session.customer === "object"
+      ? session.customer.email?.toLowerCase()
+      : null;
+  const accountEmail = account.email?.toLowerCase() ?? null;
+  const matchesAccount = session.client_reference_id === account.id;
+  const matchesEmail = Boolean(accountEmail && customerEmail === accountEmail);
+
+  if (!matchesAccount && !matchesEmail) {
     throw new ValidationError("Checkout session does not belong to this account.", 403);
   }
 

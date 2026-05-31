@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
-import { syncCheckoutSessionSubscription } from "@/lib/billing";
+import {
+  hasActiveSubscription,
+  refreshSubscriptionFromStripe,
+  syncCheckoutSessionSubscription,
+} from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { ValidationError } from "@/lib/validation";
 
@@ -9,7 +13,7 @@ const REQUIRED_FIELDS = ["heardFrom", "creatorType", "contentSource", "primaryGo
 
 export async function POST(request: Request) {
   try {
-    const account = await requireUserAccount();
+    let account = await requireUserAccount();
     const body = await request.json().catch(() => ({}));
     const postingPlatforms = Array.isArray(body.postingPlatforms)
       ? body.postingPlatforms.filter(
@@ -24,7 +28,15 @@ export async function POST(request: Request) {
     }
 
     if (typeof body.checkoutSessionId === "string" && body.checkoutSessionId.trim()) {
-      await syncCheckoutSessionSubscription(account, body.checkoutSessionId);
+      try {
+        account = await syncCheckoutSessionSubscription(account, body.checkoutSessionId);
+      } catch (error) {
+        account = await refreshSubscriptionFromStripe(account);
+
+        if (!hasActiveSubscription(account)) {
+          throw error;
+        }
+      }
     }
 
     await prisma.userAccount.update({
