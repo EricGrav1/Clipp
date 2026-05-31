@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Fredoka, Nunito, IBM_Plex_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { isClerkPublishableKey } from "@/lib/env";
 import "./globals.css";
 
 // Display — rounded, friendly, the Clip Farmer voice.
@@ -52,6 +53,9 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   const app = <ThemeProvider>{children}</ThemeProvider>;
+  const hasValidClerkPublishableKey = isClerkPublishableKey(
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  );
 
   return (
     <html
@@ -63,7 +67,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="font-sans antialiased">
-        {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
+        {hasValidClerkPublishableKey ? (
           <ClerkProvider>{app}</ClerkProvider>
         ) : (
           app

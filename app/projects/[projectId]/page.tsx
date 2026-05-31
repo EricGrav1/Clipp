@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { EditorWorkspace } from "@/components/editor-workspace";
 import { requireUserAccount } from "@/lib/auth";
-import { hasActiveSubscription } from "@/lib/billing";
+import { hasActiveSubscription, refreshSubscriptionFromStripe } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,8 @@ export default async function ProjectPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  const account = await requireUserAccount();
+  let account = await requireUserAccount();
+  account = await refreshSubscriptionFromStripe(account);
 
   if (!hasActiveSubscription(account)) {
     redirect("/pricing?required=subscription");

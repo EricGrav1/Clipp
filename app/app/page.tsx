@@ -1,13 +1,14 @@
 import { ProjectHome } from "@/components/project-home";
 import { requireUserAccount } from "@/lib/auth";
-import { hasActiveSubscription } from "@/lib/billing";
+import { hasActiveSubscription, refreshSubscriptionFromStripe } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function AppHomePage() {
-  const account = await requireUserAccount();
+  let account = await requireUserAccount();
+  account = await refreshSubscriptionFromStripe(account);
 
   if (!hasActiveSubscription(account)) {
     redirect("/pricing?required=subscription");

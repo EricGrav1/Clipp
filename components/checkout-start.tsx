@@ -5,6 +5,7 @@ import { CreditCard, Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { isClerkPublishableKey } from "@/lib/env";
 
 async function readJsonPayload(response: Response, fallback: string) {
   const contentType = response.headers.get("content-type") ?? "";
@@ -18,7 +19,9 @@ async function readJsonPayload(response: Response, fallback: string) {
 }
 
 export function CheckoutStart({ interval }: { interval: "monthly" | "yearly" }) {
-  const isClerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  const isClerkEnabled = isClerkPublishableKey(
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  );
 
   if (isClerkEnabled) {
     return <ClerkCheckoutStart interval={interval} />;

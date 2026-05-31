@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { trimmedEnvValue } from "@/lib/env";
 import { ValidationError } from "@/lib/validation";
 
 export const STRIPE_API_VERSION = "2026-04-22.dahlia";
@@ -13,7 +14,7 @@ function assertAsciiEnvironmentValue(name: string, value: string) {
 }
 
 export function getStripeSecretKey() {
-  const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
+  const secretKey = trimmedEnvValue(process.env.STRIPE_SECRET_KEY);
 
   if (!secretKey) {
     throw new ValidationError("STRIPE_SECRET_KEY is not configured.", 500);
@@ -24,6 +25,13 @@ export function getStripeSecretKey() {
   if (!secretKey.startsWith("sk_")) {
     throw new ValidationError(
       "STRIPE_SECRET_KEY must be a Stripe secret key that starts with sk_.",
+      500,
+    );
+  }
+
+  if (secretKey === trimmedEnvValue(process.env.CLERK_SECRET_KEY)) {
+    throw new ValidationError(
+      "STRIPE_SECRET_KEY matches CLERK_SECRET_KEY. Paste the Stripe secret key into STRIPE_SECRET_KEY and the Clerk secret key into CLERK_SECRET_KEY.",
       500,
     );
   }

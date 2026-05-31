@@ -1,22 +1,10 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import type { NextRequest } from "next/server";
+import {
+  getClerkEnvironmentIssue,
+  hasValidClerkEnvironment,
+} from "@/lib/env";
+import type { NextFetchEvent, NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-
-function isPrintableAscii(value: string) {
-  return /^[\x20-\x7E]+$/.test(value);
-}
-
-function isClerkConfigured() {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
-  const secretKey = process.env.CLERK_SECRET_KEY?.trim();
-
-  return Boolean(
-    publishableKey?.startsWith("pk_") &&
-      secretKey?.startsWith("sk_") &&
-      isPrintableAscii(publishableKey) &&
-      isPrintableAscii(secretKey),
-  );
-}
 
 const isProtectedRoute = createRouteMatcher([
   "/app(.*)",
@@ -26,19 +14,36 @@ const isProtectedRoute = createRouteMatcher([
   "/projects(.*)",
 ]);
 
-const middleware = isClerkConfigured()
-  ? clerkMiddleware(async (auth, request) => {
-      if (isProtectedRoute(request)) {
-        await auth.protect();
-      }
-    })
-  : function missingClerkMiddleware(request: NextRequest) {
-      if (process.env.NODE_ENV === "production" && isProtectedRoute(request)) {
-        return NextResponse.redirect(new URL("/?auth=configuration", request.url));
-      }
+function missingClerkMiddleware(request: NextRequest) {
+  if (process.env.NODE_ENV === "production" && isProtectedRoute(request)) {
+    return NextResponse.redirect(new URL("/?auth=configuration", request.url));
+  }
 
-      return NextResponse.next();
-    };
+  return NextResponse.next();
+}
+
+const protectedClerkMiddleware = clerkMiddleware(async (auth, request) => {
+  if (isProtectedRoute(request)) {
+    await auth.protect();
+  }
+});
+
+async function middleware(request: NextRequest, event: NextFetchEvent) {
+  if (!hasValidClerkEnvironment()) {
+    return missingClerkMiddleware(request);
+  }
+
+  try {
+    return await protectedClerkMiddleware(request, event);
+  } catch (error) {
+    console.error("Clerk middleware failed", {
+      issue: getClerkEnvironmentIssue() ?? "Clerk rejected the configured keys.",
+      message: error instanceof Error ? error.message : "Unknown Clerk error",
+    });
+
+    return missingClerkMiddleware(request);
+  }
+}
 
 export default middleware;
 

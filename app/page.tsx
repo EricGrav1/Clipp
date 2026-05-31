@@ -16,6 +16,7 @@ import { AuthNav } from "@/components/auth-nav";
 import { CheckoutButton } from "@/components/billing-actions";
 import { Button } from "@/components/ui/button";
 import { BearFarmer } from "@/components/ui/mascot";
+import { isClerkPublishableKey } from "@/lib/env";
 
 const steps = [
   {
@@ -68,6 +69,10 @@ const benefits = [
 const proof = ["Podcast hosts", "Coaches", "Course creators", "Streamers", "Solo founders"];
 
 export default function LandingPage() {
+  const isClerkEnabled = isClerkPublishableKey(
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  );
+
   return (
     <main className="min-h-screen overflow-hidden">
       <header className="sticky top-0 z-20 border-b border-border/80 bg-background/82 backdrop-blur">
@@ -86,9 +91,7 @@ export default function LandingPage() {
             <a href="#examples">Examples</a>
           </nav>
           <div className="flex items-center gap-2">
-            <AuthNav
-              isClerkEnabled={Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY)}
-            />
+            <AuthNav isClerkEnabled={isClerkEnabled} />
           </div>
         </div>
       </header>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
+import { syncCheckoutSessionSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { ValidationError } from "@/lib/validation";
 
@@ -20,6 +21,10 @@ export async function POST(request: Request) {
       if (typeof body[field] !== "string" || !body[field].trim()) {
         throw new ValidationError("Complete the required onboarding questions.", 400);
       }
+    }
+
+    if (typeof body.checkoutSessionId === "string" && body.checkoutSessionId.trim()) {
+      await syncCheckoutSessionSubscription(account, body.checkoutSessionId);
     }
 
     await prisma.userAccount.update({

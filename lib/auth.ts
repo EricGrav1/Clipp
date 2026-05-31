@@ -1,4 +1,5 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { hasValidClerkEnvironment } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { ValidationError } from "@/lib/validation";
 
@@ -7,22 +8,6 @@ const DEFAULT_FOUNDER_EMAIL = "EricGrav1@icloud.com";
 
 function isProduction() {
   return process.env.NODE_ENV === "production";
-}
-
-function isPrintableAscii(value: string) {
-  return /^[\x20-\x7E]+$/.test(value);
-}
-
-function hasValidClerkEnvironment() {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
-  const secretKey = process.env.CLERK_SECRET_KEY?.trim();
-
-  return Boolean(
-    publishableKey?.startsWith("pk_") &&
-      secretKey?.startsWith("sk_") &&
-      isPrintableAscii(publishableKey) &&
-      isPrintableAscii(secretKey),
-  );
 }
 
 export function isClerkConfigured() {

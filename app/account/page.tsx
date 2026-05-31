@@ -3,14 +3,18 @@ import { BillingPortalButton, CheckoutButton } from "@/components/billing-action
 import { SocialAccountsPanel } from "@/components/social/social-accounts-panel";
 import { Button } from "@/components/ui/button";
 import { requireUserAccount } from "@/lib/auth";
-import { getRemainingRenderSeconds, hasActiveSubscription } from "@/lib/billing";
+import {
+  getRemainingRenderSeconds,
+  hasActiveSubscription,
+  refreshSubscriptionFromStripe,
+} from "@/lib/billing";
 import { formatDuration } from "@/lib/format";
 import { getSocialConnections } from "@/lib/social";
 
 export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
-  const account = await requireUserAccount();
+  const account = await refreshSubscriptionFromStripe(await requireUserAccount());
   const hasSubscription = hasActiveSubscription(account);
   const remainingSeconds = getRemainingRenderSeconds(account);
   const socialConnections = hasSubscription ? await getSocialConnections(account) : [];

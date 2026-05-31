@@ -48,7 +48,11 @@ const primaryGoals = [
 const platforms = ["TikTok", "Instagram", "YouTube Shorts", "Facebook", "LinkedIn", "X"];
 const teamSizes = ["Just me", "2-3 people", "4-10 people", "10+ people"];
 
-export function OnboardingForm() {
+export function OnboardingForm({
+  checkoutSessionId,
+}: {
+  checkoutSessionId?: string;
+}) {
   const router = useRouter();
   const [heardFrom, setHeardFrom] = useState("");
   const [creatorType, setCreatorType] = useState("");
@@ -82,6 +86,7 @@ export function OnboardingForm() {
           primaryGoal,
           postingPlatforms,
           teamSize,
+          checkoutSessionId,
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
