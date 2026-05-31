@@ -34,6 +34,23 @@ type EditorProject = {
 
 const DURATIONS = [30, 45, 60] as const;
 
+async function readJsonPayload<T extends { error?: string }>(
+  response: Response,
+  fallback: string,
+) {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return response.json() as Promise<T>;
+  }
+
+  const text = await response.text().catch(() => "");
+
+  return {
+    error: text ? `${fallback} ${text}` : fallback,
+  } as T;
+}
+
 export function EditorWorkspace({ project }: { project: EditorProject }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -83,22 +100,98 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
     setError("");
     setIsUploading(true);
 
-    const formData = new FormData();
-    formData.append("video", file);
-
     try {
+      const uploadUrlResponse = await fetch(
+        `/api/projects/${project.id}/video/upload-url`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: file.name,
+            mimeType: file.type,
+            sizeBytes: file.size,
+          }),
+        },
+      );
+      const uploadUrlPayload = await readJsonPayload<{
+        error?: string;
+        upload?: {
+          objectKey: string;
+          uploadUrl: string;
+          url: string;
+        };
+      }>(uploadUrlResponse, "Could not prepare video upload.");
+
+      if (uploadUrlResponse.ok && uploadUrlPayload.upload) {
+        const directUploadResponse = await fetch(uploadUrlPayload.upload.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+          body: file,
+        });
+
+        if (!directUploadResponse.ok) {
+          throw new Error(
+            "Video storage rejected the upload. Check the R2 bucket CORS settings and try again.",
+          );
+        }
+
+        const completeResponse = await fetch(
+          `/api/projects/${project.id}/video/complete`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              objectKey: uploadUrlPayload.upload.objectKey,
+              originalName: file.name,
+              mimeType: file.type,
+              sizeBytes: file.size,
+              url: uploadUrlPayload.upload.url,
+            }),
+          },
+        );
+        const completePayload = await readJsonPayload<{
+          error?: string;
+          clips?: ClipItem[];
+          video?: VideoItem;
+        }>(completeResponse, "Could not finish video upload.");
+
+        if (!completeResponse.ok || !completePayload.video) {
+          throw new Error(completePayload.error ?? "Could not finish video upload.");
+        }
+
+        setVideo(completePayload.video);
+        setClips(completePayload.clips ?? []);
+        setCurrentTime(0);
+        setClipStartTime(0);
+        setVideoDuration(0);
+        return;
+      }
+
+      if (
+        uploadUrlResponse.status !== 501 ||
+        window.location.hostname !== "localhost"
+      ) {
+        throw new Error(uploadUrlPayload.error ?? "Could not prepare video upload.");
+      }
+
+      const formData = new FormData();
+      formData.append("video", file);
       const response = await fetch(`/api/projects/${project.id}/video`, {
         method: "POST",
         body: formData,
       });
-      const payload = await response.json();
+      const payload = await readJsonPayload<{
+        error?: string;
+        clips?: ClipItem[];
+        video?: VideoItem;
+      }>(response, "Upload failed.");
 
-      if (!response.ok) {
+      if (!response.ok || !payload.video) {
         throw new Error(payload.error ?? "Upload failed.");
       }
 
       setVideo(payload.video);
-      setClips([]);
+      setClips(payload.clips ?? []);
       setCurrentTime(0);
       setClipStartTime(0);
       setVideoDuration(0);
@@ -133,15 +226,19 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
           videoDuration,
         }),
       });
-      const payload = await response.json();
+      const payload = await readJsonPayload<{
+        clip?: ClipItem;
+        error?: string;
+      }>(response, "Could not create clip.");
 
-      if (!response.ok) {
+      if (!response.ok || !payload.clip) {
         throw new Error(payload.error ?? "Could not create clip.");
       }
 
+      const nextClip = payload.clip;
       setClips((existing) => [
-        payload.clip,
-        ...existing.filter((clip) => clip.id !== payload.clip.id),
+        nextClip,
+        ...existing.filter((clip) => clip.id !== nextClip.id),
       ]);
     } catch (caughtError) {
       setError(

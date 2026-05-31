@@ -83,6 +83,41 @@ export function assertVideoFile(file: File | null) {
   return file;
 }
 
+export function assertVideoMetadata({
+  fileName,
+  mimeType,
+  sizeBytes,
+}: {
+  fileName: unknown;
+  mimeType: unknown;
+  sizeBytes: unknown;
+}) {
+  if (typeof fileName !== "string" || typeof mimeType !== "string") {
+    throw new ValidationError("Video file metadata is required.");
+  }
+
+  const extension = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+  if (
+    !ALLOWED_VIDEO_MIME_TYPES.has(mimeType) ||
+    !ALLOWED_VIDEO_EXTENSIONS.has(extension)
+  ) {
+    throw new ValidationError("Upload an mp4, mov, or webm video.");
+  }
+
+  const bytes = Number(sizeBytes);
+  const maxSizeBytes = 1024 * 1024 * 1024;
+  if (!Number.isFinite(bytes) || bytes <= 0 || bytes > maxSizeBytes) {
+    throw new ValidationError("Video must be between 1 byte and 1 GB.");
+  }
+
+  return {
+    extension,
+    fileName,
+    mimeType,
+    sizeBytes: Math.ceil(bytes),
+  };
+}
+
 export function getVideoExtension(fileName: string) {
   const extension = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
   if (!ALLOWED_VIDEO_EXTENSIONS.has(extension)) {

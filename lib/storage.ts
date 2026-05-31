@@ -20,6 +20,15 @@ type StoredMedia = {
   url: string;
 };
 
+export function isR2Configured() {
+  return Boolean(
+    process.env.R2_ACCOUNT_ID &&
+      process.env.R2_ACCESS_KEY_ID &&
+      process.env.R2_SECRET_ACCESS_KEY &&
+      process.env.R2_BUCKET,
+  );
+}
+
 function getR2Client() {
   const accountId = process.env.R2_ACCOUNT_ID;
   const accessKeyId = process.env.R2_ACCESS_KEY_ID;
@@ -42,6 +51,35 @@ function mediaUrl(objectKey: string, localUrl: string) {
   }
 
   return getR2Client() ? `/api/media/${objectKey}` : localUrl;
+}
+
+export async function createDirectVideoUpload(extension: string, contentType: string) {
+  const client = getR2Client();
+
+  if (!client) {
+    return null;
+  }
+
+  const fileName = `${randomUUID()}${extension}`;
+  const objectKey = `uploads/${fileName}`;
+  const uploadUrl = await getSignedUrl(
+    client,
+    new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: objectKey,
+      ContentType: contentType || "application/octet-stream",
+    }),
+    { expiresIn: 60 * 10 },
+  );
+
+  return {
+    fileName,
+    objectKey,
+    path: null,
+    provider: "r2",
+    uploadUrl,
+    url: mediaUrl(objectKey, toPublicUploadUrl(fileName)),
+  };
 }
 
 export async function storeUploadedVideo(file: File, extension: string) {
