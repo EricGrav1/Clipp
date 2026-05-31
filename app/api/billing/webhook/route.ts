@@ -13,6 +13,9 @@ async function syncSubscription(subscription: Stripe.Subscription) {
   const periodStart = subscription.items.data[0]?.current_period_start;
   const periodEnd = subscription.items.data[0]?.current_period_end;
   const priceId = subscription.items.data[0]?.price.id ?? null;
+  const subscriptionStatus = subscription.cancel_at_period_end
+    ? "canceled"
+    : subscription.status;
 
   await prisma.userAccount.updateMany({
     where: {
@@ -24,7 +27,7 @@ async function syncSubscription(subscription: Stripe.Subscription) {
     data: {
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscription.id,
-      subscriptionStatus: subscription.status,
+      subscriptionStatus,
       stripePriceId: priceId,
       currentPeriodStart: periodStart ? new Date(periodStart * 1000) : null,
       currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,

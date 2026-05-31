@@ -25,6 +25,7 @@ type StripeSubscriptionItem = {
 
 type StripeSubscriptionResponse = {
   id: string;
+  cancel_at_period_end?: boolean | null;
   customer?: string | StripeCustomer | null;
   status?: string | null;
   items?: {
@@ -75,6 +76,9 @@ function getStripeObjectId(value: string | { id?: string | null } | null | undef
 
 function getSubscriptionSnapshot(subscription: StripeSubscriptionResponse) {
   const item = subscription.items?.data?.[0];
+  const status = subscription.cancel_at_period_end
+    ? "canceled"
+    : subscription.status ?? "inactive";
 
   return {
     currentPeriodStart: item?.current_period_start
@@ -84,7 +88,7 @@ function getSubscriptionSnapshot(subscription: StripeSubscriptionResponse) {
       ? new Date(item.current_period_end * 1000)
       : null,
     priceId: item?.price?.id ?? null,
-    status: subscription.status ?? "inactive",
+    status,
   };
 }
 
@@ -206,7 +210,7 @@ export async function syncCheckoutSessionSubscription(
 }
 
 export async function refreshSubscriptionFromStripe(account: UserAccount) {
-  if (hasActiveSubscription(account) || !isBillingConfigured()) {
+  if (isFounderAccount(account) || !isBillingConfigured()) {
     return account;
   }
 
