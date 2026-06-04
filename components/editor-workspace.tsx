@@ -51,6 +51,45 @@ async function readJsonPayload<T extends { error?: string }>(
   } as T;
 }
 
+function uploadFileToSignedUrl({
+  file,
+  onProgress,
+  uploadUrl,
+}: {
+  file: File;
+  onProgress: (progress: number) => void;
+  uploadUrl: string;
+}) {
+  return new Promise<void>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) {
+        onProgress(100);
+        resolve();
+        return;
+      }
+
+      reject(
+        new Error(
+          "Video storage rejected the upload. Check the R2 bucket CORS settings and try again.",
+        ),
+      );
+    };
+    request.onerror = () => {
+      reject(new Error("Video upload failed. Check your connection and try again."));
+    };
+    request.open("PUT", uploadUrl);
+    request.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    request.send(file);
+  });
+}
+
 export function EditorWorkspace({ project }: { project: EditorProject }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -64,6 +103,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
   const [selectedDuration, setSelectedDuration] = useState<number>(30);
   const [customDuration, setCustomDuration] = useState("30");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
 
@@ -123,17 +163,12 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
       }>(uploadUrlResponse, "Could not prepare video upload.");
 
       if (uploadUrlResponse.ok && uploadUrlPayload.upload) {
-        const directUploadResponse = await fetch(uploadUrlPayload.upload.uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": file.type || "application/octet-stream" },
-          body: file,
+        setUploadProgress(0);
+        await uploadFileToSignedUrl({
+          file,
+          onProgress: setUploadProgress,
+          uploadUrl: uploadUrlPayload.upload.uploadUrl,
         });
-
-        if (!directUploadResponse.ok) {
-          throw new Error(
-            "Video storage rejected the upload. Check the R2 bucket CORS settings and try again.",
-          );
-        }
 
         const completeResponse = await fetch(
           `/api/projects/${project.id}/video/complete`,
@@ -201,6 +236,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
       );
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -296,7 +332,11 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                 ) : (
                   <Upload className="h-4 w-4" />
                 )}
-                {video ? "Replant Video" : "Plant Video"}
+                {isUploading && uploadProgress !== null
+                  ? `${uploadProgress}%`
+                  : video
+                    ? "Replant Video"
+                    : "Plant Video"}
               </Button>
               <ThemeToggle />
             </div>

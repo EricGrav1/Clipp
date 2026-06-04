@@ -4,6 +4,12 @@ const ALLOWED_VIDEO_MIME_TYPES = new Set([
   "video/webm",
 ]);
 const ALLOWED_VIDEO_EXTENSIONS = new Set([".mp4", ".mov", ".webm"]);
+const LOCAL_VIDEO_MAX_BYTES = 1024 * 1024 * 1024;
+const DIRECT_VIDEO_MAX_BYTES = 5 * 1024 * 1024 * 1024;
+
+function formatGigabytes(bytes: number) {
+  return `${Math.round(bytes / 1024 / 1024 / 1024)} GB`;
+}
 
 export class ValidationError extends Error {
   status: number;
@@ -75,9 +81,11 @@ export function assertVideoFile(file: File | null) {
     throw new ValidationError("Upload an mp4, mov, or webm video.");
   }
 
-  const maxSizeBytes = 1024 * 1024 * 1024;
+  const maxSizeBytes = LOCAL_VIDEO_MAX_BYTES;
   if (file.size <= 0 || file.size > maxSizeBytes) {
-    throw new ValidationError("Video must be between 1 byte and 1 GB.");
+    throw new ValidationError(
+      `Video must be between 1 byte and ${formatGigabytes(maxSizeBytes)}.`,
+    );
   }
 
   return file;
@@ -105,9 +113,11 @@ export function assertVideoMetadata({
   }
 
   const bytes = Number(sizeBytes);
-  const maxSizeBytes = 1024 * 1024 * 1024;
+  const maxSizeBytes = DIRECT_VIDEO_MAX_BYTES;
   if (!Number.isFinite(bytes) || bytes <= 0 || bytes > maxSizeBytes) {
-    throw new ValidationError("Video must be between 1 byte and 1 GB.");
+    throw new ValidationError(
+      `Video must be between 1 byte and ${formatGigabytes(maxSizeBytes)}.`,
+    );
   }
 
   return {
