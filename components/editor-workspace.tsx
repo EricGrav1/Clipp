@@ -33,6 +33,24 @@ type EditorProject = {
 };
 
 const DURATIONS = [30, 45, 60] as const;
+const MULTIPART_UPLOAD_CONCURRENCY = 3;
+const MULTIPART_UPLOAD_RETRIES = 3;
+
+type DirectUpload = {
+  mode: "single";
+  objectKey: string;
+  uploadUrl: string;
+  url: string;
+};
+
+type MultipartUpload = {
+  mode: "multipart";
+  objectKey: string;
+  parts: Array<{ partNumber: number; uploadUrl: string }>;
+  partSize: number;
+  uploadId: string;
+  url: string;
+};
 
 async function readJsonPayload<T extends { error?: string }>(
   response: Response,
@@ -51,16 +69,18 @@ async function readJsonPayload<T extends { error?: string }>(
   } as T;
 }
 
-function uploadFileToSignedUrl({
-  file,
+function uploadBlobToSignedUrl({
+  blob,
+  contentType,
   onProgress,
   uploadUrl,
 }: {
-  file: File;
+  blob: Blob;
+  contentType?: string;
   onProgress: (progress: number) => void;
   uploadUrl: string;
 }) {
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<string | null>((resolve, reject) => {
     const request = new XMLHttpRequest();
 
     request.upload.onprogress = (event) => {
@@ -71,23 +91,108 @@ function uploadFileToSignedUrl({
     request.onload = () => {
       if (request.status >= 200 && request.status < 300) {
         onProgress(100);
-        resolve();
+        resolve(request.getResponseHeader("ETag"));
         return;
       }
 
       reject(
         new Error(
-          "Video storage rejected the upload. Check the R2 bucket CORS settings and try again.",
+          `Video storage rejected the upload (${request.status}). Check the R2 bucket CORS settings and try again.`,
         ),
       );
     };
     request.onerror = () => {
-      reject(new Error("Video upload failed. Check your connection and try again."));
+      reject(
+        new Error(
+          "R2 blocked the browser upload. In the bucket CORS policy, allow https://clippfarmer.com for PUT requests and expose the ETag header.",
+        ),
+      );
     };
     request.open("PUT", uploadUrl);
-    request.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-    request.send(file);
+    if (contentType) {
+      request.setRequestHeader("Content-Type", contentType);
+    }
+    request.send(blob);
   });
+}
+
+async function uploadMultipartFile({
+  file,
+  onProgress,
+  upload,
+}: {
+  file: File;
+  onProgress: (progress: number) => void;
+  upload: MultipartUpload;
+}) {
+  const loadedByPart = new Map<number, number>();
+  const completedParts: Array<{ etag: string; partNumber: number }> = [];
+  let nextPartIndex = 0;
+
+  function updateProgress(partNumber: number, loadedBytes: number) {
+    loadedByPart.set(partNumber, loadedBytes);
+    const totalLoaded = Array.from(loadedByPart.values()).reduce(
+      (total, loaded) => total + loaded,
+      0,
+    );
+    onProgress(Math.min(100, Math.round((totalLoaded / file.size) * 100)));
+  }
+
+  async function uploadPart(part: MultipartUpload["parts"][number]) {
+    const start = (part.partNumber - 1) * upload.partSize;
+    const end = Math.min(start + upload.partSize, file.size);
+    const blob = file.slice(start, end);
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= MULTIPART_UPLOAD_RETRIES; attempt += 1) {
+      try {
+        const etag = await uploadBlobToSignedUrl({
+          blob,
+          onProgress: (percent) => {
+            updateProgress(part.partNumber, Math.round((percent / 100) * blob.size));
+          },
+          uploadUrl: part.uploadUrl,
+        });
+
+        if (!etag) {
+          throw new Error(
+            "R2 uploaded a video part but hid its ETag. Add ETag to the bucket CORS ExposeHeaders list.",
+          );
+        }
+
+        updateProgress(part.partNumber, blob.size);
+        completedParts.push({ etag, partNumber: part.partNumber });
+        return;
+      } catch (error) {
+        lastError = error;
+        loadedByPart.set(part.partNumber, 0);
+
+        if (attempt < MULTIPART_UPLOAD_RETRIES) {
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1_000));
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
+  async function worker() {
+    while (nextPartIndex < upload.parts.length) {
+      const part = upload.parts[nextPartIndex];
+      nextPartIndex += 1;
+      await uploadPart(part);
+    }
+  }
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(MULTIPART_UPLOAD_CONCURRENCY, upload.parts.length) },
+      () => worker(),
+    ),
+  );
+  onProgress(100);
+
+  return completedParts.sort((a, b) => a.partNumber - b.partNumber);
 }
 
 export function EditorWorkspace({ project }: { project: EditorProject }) {
@@ -155,20 +260,28 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
       );
       const uploadUrlPayload = await readJsonPayload<{
         error?: string;
-        upload?: {
-          objectKey: string;
-          uploadUrl: string;
-          url: string;
-        };
+        upload?: DirectUpload | MultipartUpload;
       }>(uploadUrlResponse, "Could not prepare video upload.");
 
       if (uploadUrlResponse.ok && uploadUrlPayload.upload) {
         setUploadProgress(0);
-        await uploadFileToSignedUrl({
-          file,
-          onProgress: setUploadProgress,
-          uploadUrl: uploadUrlPayload.upload.uploadUrl,
-        });
+        const multipartParts =
+          uploadUrlPayload.upload.mode === "multipart"
+            ? await uploadMultipartFile({
+                file,
+                onProgress: setUploadProgress,
+                upload: uploadUrlPayload.upload,
+              })
+            : null;
+
+        if (uploadUrlPayload.upload.mode === "single") {
+          await uploadBlobToSignedUrl({
+            blob: file,
+            contentType: file.type || "application/octet-stream",
+            onProgress: setUploadProgress,
+            uploadUrl: uploadUrlPayload.upload.uploadUrl,
+          });
+        }
 
         const completeResponse = await fetch(
           `/api/projects/${project.id}/video/complete`,
@@ -181,6 +294,13 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
               mimeType: file.type,
               sizeBytes: file.size,
               url: uploadUrlPayload.upload.url,
+              multipartUpload:
+                uploadUrlPayload.upload.mode === "multipart"
+                  ? {
+                      parts: multipartParts,
+                      uploadId: uploadUrlPayload.upload.uploadId,
+                    }
+                  : null,
             }),
           },
         );

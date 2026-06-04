@@ -3,7 +3,7 @@ import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
-import { deleteStoredMedia } from "@/lib/storage";
+import { completeMultipartVideoUpload, deleteStoredMedia } from "@/lib/storage";
 import { assertVideoMetadata, ValidationError } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -14,6 +14,44 @@ function assertUploadedObject(value: unknown) {
   }
 
   return value;
+}
+
+function assertMultipartUpload(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const upload = value as {
+    parts?: Array<{ etag?: unknown; partNumber?: unknown }>;
+    uploadId?: unknown;
+  };
+  if (
+    typeof upload.uploadId !== "string" ||
+    !upload.uploadId ||
+    !Array.isArray(upload.parts) ||
+    upload.parts.length === 0
+  ) {
+    throw new ValidationError("Multipart upload details are invalid.");
+  }
+
+  return {
+    uploadId: upload.uploadId,
+    parts: upload.parts.map((part) => {
+      if (
+        typeof part.etag !== "string" ||
+        !part.etag ||
+        !Number.isInteger(part.partNumber) ||
+        Number(part.partNumber) < 1
+      ) {
+        throw new ValidationError("Multipart upload part is invalid.");
+      }
+
+      return {
+        etag: part.etag,
+        partNumber: Number(part.partNumber),
+      };
+    }),
+  };
 }
 
 export async function POST(
@@ -31,6 +69,7 @@ export async function POST(
       sizeBytes: body.sizeBytes,
     });
     const objectKey = assertUploadedObject(body.objectKey);
+    const multipartUpload = assertMultipartUpload(body.multipartUpload);
     const fileName = objectKey.split("/").at(-1);
 
     if (!fileName) {
@@ -47,6 +86,14 @@ export async function POST(
 
     if (!project) {
       throw new ValidationError("Project not found.");
+    }
+
+    if (multipartUpload) {
+      await completeMultipartVideoUpload({
+        objectKey,
+        parts: multipartUpload.parts,
+        uploadId: multipartUpload.uploadId,
+      });
     }
 
     await Promise.all([

@@ -35,6 +35,7 @@ export async function POST(
     const upload = await createDirectVideoUpload(
       metadata.extension,
       metadata.mimeType,
+      metadata.sizeBytes,
     );
 
     if (!upload) {

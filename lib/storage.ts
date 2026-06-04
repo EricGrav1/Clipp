@@ -3,10 +3,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
+  UploadPartCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ensureMediaDirectories, safeJoin, unlinkIfPresent } from "@/lib/files";
@@ -19,6 +22,9 @@ type StoredMedia = {
   provider: string;
   url: string;
 };
+
+const MULTIPART_UPLOAD_THRESHOLD_BYTES = 100 * 1024 * 1024;
+const MULTIPART_PART_SIZE_BYTES = 64 * 1024 * 1024;
 
 export function isR2Configured() {
   return Boolean(
@@ -53,7 +59,11 @@ function mediaUrl(objectKey: string, localUrl: string) {
   return getR2Client() ? `/api/media/${objectKey}` : localUrl;
 }
 
-export async function createDirectVideoUpload(extension: string, contentType: string) {
+export async function createDirectVideoUpload(
+  extension: string,
+  contentType: string,
+  sizeBytes: number,
+) {
   const client = getR2Client();
 
   if (!client) {
@@ -62,6 +72,52 @@ export async function createDirectVideoUpload(extension: string, contentType: st
 
   const fileName = `${randomUUID()}${extension}`;
   const objectKey = `uploads/${fileName}`;
+
+  if (sizeBytes > MULTIPART_UPLOAD_THRESHOLD_BYTES) {
+    const multipartUpload = await client.send(
+      new CreateMultipartUploadCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: objectKey,
+        ContentType: contentType || "application/octet-stream",
+      }),
+    );
+
+    if (!multipartUpload.UploadId) {
+      throw new Error("R2 did not create a multipart upload.");
+    }
+
+    const partCount = Math.ceil(sizeBytes / MULTIPART_PART_SIZE_BYTES);
+    const parts = await Promise.all(
+      Array.from({ length: partCount }, async (_, index) => {
+        const partNumber = index + 1;
+        const uploadUrl = await getSignedUrl(
+          client,
+          new UploadPartCommand({
+            Bucket: process.env.R2_BUCKET,
+            Key: objectKey,
+            PartNumber: partNumber,
+            UploadId: multipartUpload.UploadId,
+          }),
+          { expiresIn: 60 * 60 },
+        );
+
+        return { partNumber, uploadUrl };
+      }),
+    );
+
+    return {
+      fileName,
+      mode: "multipart" as const,
+      objectKey,
+      partSize: MULTIPART_PART_SIZE_BYTES,
+      parts,
+      path: null,
+      provider: "r2",
+      uploadId: multipartUpload.UploadId,
+      url: mediaUrl(objectKey, toPublicUploadUrl(fileName)),
+    };
+  }
+
   const uploadUrl = await getSignedUrl(
     client,
     new PutObjectCommand({
@@ -74,12 +130,45 @@ export async function createDirectVideoUpload(extension: string, contentType: st
 
   return {
     fileName,
+    mode: "single" as const,
     objectKey,
     path: null,
     provider: "r2",
     uploadUrl,
     url: mediaUrl(objectKey, toPublicUploadUrl(fileName)),
   };
+}
+
+export async function completeMultipartVideoUpload({
+  objectKey,
+  parts,
+  uploadId,
+}: {
+  objectKey: string;
+  parts: Array<{ etag: string; partNumber: number }>;
+  uploadId: string;
+}) {
+  const client = getR2Client();
+
+  if (!client) {
+    throw new Error("Cloudflare R2 storage is not configured.");
+  }
+
+  await client.send(
+    new CompleteMultipartUploadCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: objectKey,
+      MultipartUpload: {
+        Parts: parts
+          .sort((a, b) => a.partNumber - b.partNumber)
+          .map((part) => ({
+            ETag: part.etag,
+            PartNumber: part.partNumber,
+          })),
+      },
+      UploadId: uploadId,
+    }),
+  );
 }
 
 export async function storeUploadedVideo(file: File, extension: string) {
