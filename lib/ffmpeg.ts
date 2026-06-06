@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { chmodSync, existsSync } from "node:fs";
+import path from "node:path";
 import ffmpegStaticPath from "ffmpeg-static";
 
 type RenderClipInput = {
@@ -9,6 +10,29 @@ type RenderClipInput = {
   duration: number;
 };
 
+function resolveFfmpegBinary() {
+  const candidates = [
+    process.env.FFMPEG_PATH,
+    path.join(process.cwd(), "node_modules", "ffmpeg-static", "ffmpeg"),
+    ffmpegStaticPath,
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (candidate && existsSync(candidate)) {
+      try {
+        chmodSync(candidate, 0o755);
+      } catch {
+        // Some hosts mount traced files read-only. Spawn can still work if the
+        // executable bit is already preserved.
+      }
+
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
 export function renderClip({
   inputPath,
   outputPath,
@@ -16,13 +40,17 @@ export function renderClip({
   duration,
 }: RenderClipInput) {
   return new Promise<void>((resolve, reject) => {
-    const ffmpegBinary = process.env.FFMPEG_PATH || ffmpegStaticPath || "ffmpeg";
-    const hasExplicitBinary = Boolean(process.env.FFMPEG_PATH || ffmpegStaticPath);
+    const ffmpegBinary = resolveFfmpegBinary();
 
-    if (hasExplicitBinary && !existsSync(ffmpegBinary)) {
+    if (!ffmpegBinary) {
       reject(
         new Error(
-          `FFmpeg binary was resolved but not found at runtime: ${ffmpegBinary}`,
+          `FFmpeg binary was not found at runtime. Checked FFMPEG_PATH, ${path.join(
+            process.cwd(),
+            "node_modules",
+            "ffmpeg-static",
+            "ffmpeg",
+          )}, and ffmpeg-static export ${ffmpegStaticPath ?? "null"}.`,
         ),
       );
       return;
