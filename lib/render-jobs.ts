@@ -105,6 +105,7 @@ export async function processRenderJob(jobId: string) {
     if (renderSource.cleanupPath) {
       await deleteStoredMedia({ path: renderSource.cleanupPath }).catch(() => undefined);
     }
+    await deleteStoredMedia({ path: outputPath }).catch(() => undefined);
 
     await prisma.$transaction([
       prisma.clip.update({

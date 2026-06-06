@@ -212,8 +212,22 @@ export async function storeUploadedVideo(file: File, extension: string) {
 export async function prepareClipOutput() {
   const fileName = `${randomUUID()}.mp4`;
   const objectKey = `clips/${fileName}`;
-  await ensureMediaDirectories();
+  const client = getR2Client();
 
+  if (client) {
+    const tempClipsDir = path.join(os.tmpdir(), "clip-farmer", "clips");
+    await mkdir(tempClipsDir, { recursive: true });
+
+    return {
+      fileName,
+      objectKey,
+      outputPath: path.join(tempClipsDir, fileName),
+      url: mediaUrl(objectKey, toPublicClipUrl(fileName)),
+      provider: "r2",
+    };
+  }
+
+  await ensureMediaDirectories();
   return {
     fileName,
     objectKey,
