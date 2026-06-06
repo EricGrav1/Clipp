@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import ffmpegStaticPath from "ffmpeg-static";
 
 type RenderClipInput = {
@@ -16,6 +17,17 @@ export function renderClip({
 }: RenderClipInput) {
   return new Promise<void>((resolve, reject) => {
     const ffmpegBinary = process.env.FFMPEG_PATH || ffmpegStaticPath || "ffmpeg";
+    const hasExplicitBinary = Boolean(process.env.FFMPEG_PATH || ffmpegStaticPath);
+
+    if (hasExplicitBinary && !existsSync(ffmpegBinary)) {
+      reject(
+        new Error(
+          `FFmpeg binary was resolved but not found at runtime: ${ffmpegBinary}`,
+        ),
+      );
+      return;
+    }
+
     const ffmpeg = spawn(ffmpegBinary, [
       "-hide_banner",
       "-nostdin",
@@ -44,7 +56,7 @@ export function renderClip({
       reject(
         new Error(
           error.message.includes("ENOENT")
-            ? "FFmpeg binary is not available. Install FFmpeg or configure FFMPEG_PATH."
+            ? `FFmpeg binary is not available at runtime. Resolved path: ${ffmpegBinary}`
             : error.message,
         ),
       );
