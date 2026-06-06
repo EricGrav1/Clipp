@@ -5,7 +5,28 @@ import {
   deleteStoredMedia,
   ensureLocalReadableMedia,
   finalizeRenderedClip,
+  getSignedMediaUrl,
 } from "@/lib/storage";
+
+async function getRenderSource(input: {
+  objectKey?: string | null;
+  path?: string | null;
+  storageProvider?: string | null;
+}) {
+  if (input.storageProvider === "r2" && input.objectKey) {
+    return {
+      cleanupPath: null,
+      source: await getSignedMediaUrl(input.objectKey),
+    };
+  }
+
+  const sourcePath = await ensureLocalReadableMedia(input);
+
+  return {
+    cleanupPath: sourcePath !== input.path ? sourcePath : null,
+    source: sourcePath,
+  };
+}
 
 export async function processRenderJob(jobId: string) {
   const job = await prisma.renderJob.findUnique({
@@ -28,10 +49,10 @@ export async function processRenderJob(jobId: string) {
     return job;
   }
 
-  const sourcePath = await ensureLocalReadableMedia(job.clip.video);
+  const renderSource = await getRenderSource(job.clip.video);
   const outputPath = job.clip.path;
 
-  if (!sourcePath || !outputPath) {
+  if (!renderSource.source || !outputPath) {
     throw new Error("Render job is missing media paths.");
   }
 
@@ -51,15 +72,15 @@ export async function processRenderJob(jobId: string) {
 
   try {
     await renderClip({
-      inputPath: sourcePath,
+      inputPath: renderSource.source,
       outputPath,
       startTime: job.clip.startTime,
       duration: job.clip.duration,
     });
 
     await finalizeRenderedClip(outputPath, job.clip.objectKey ?? "");
-    if (sourcePath !== job.clip.video.path) {
-      await deleteStoredMedia({ path: sourcePath });
+    if (renderSource.cleanupPath) {
+      await deleteStoredMedia({ path: renderSource.cleanupPath });
     }
 
     const [, updatedJob] = await prisma.$transaction([
@@ -81,8 +102,8 @@ export async function processRenderJob(jobId: string) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message.slice(0, 1200) : "FFmpeg render failed.";
-    if (sourcePath !== job.clip.video.path) {
-      await deleteStoredMedia({ path: sourcePath }).catch(() => undefined);
+    if (renderSource.cleanupPath) {
+      await deleteStoredMedia({ path: renderSource.cleanupPath }).catch(() => undefined);
     }
 
     await prisma.$transaction([
