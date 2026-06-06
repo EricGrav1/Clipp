@@ -5,6 +5,7 @@ import { requireActiveSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { completeMultipartVideoUpload, deleteStoredMedia } from "@/lib/storage";
 import { assertVideoMetadata, ValidationError } from "@/lib/validation";
+import { toVideoDTO } from "@/lib/video-dto";
 
 export const runtime = "nodejs";
 
@@ -113,7 +114,7 @@ export async function POST(
         path: null,
         objectKey,
         storageProvider: "r2",
-        sizeBytes: metadata.sizeBytes,
+        sizeBytes: BigInt(metadata.sizeBytes),
       },
       update: {
         originalName: metadata.fileName,
@@ -123,12 +124,12 @@ export async function POST(
         path: null,
         objectKey,
         storageProvider: "r2",
-        sizeBytes: metadata.sizeBytes,
+        sizeBytes: BigInt(metadata.sizeBytes),
         durationSeconds: null,
       },
     });
 
-    return NextResponse.json({ video, clips: [] }, { status: 201 });
+    return NextResponse.json({ video: toVideoDTO(video), clips: [] }, { status: 201 });
   } catch (error) {
     return jsonError(error);
   }

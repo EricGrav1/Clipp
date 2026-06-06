@@ -53,7 +53,7 @@ model Video {
   path            String?
   objectKey       String?
   storageProvider String @default("local")
-  sizeBytes       Int
+  sizeBytes       BigInt
   durationSeconds Float?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

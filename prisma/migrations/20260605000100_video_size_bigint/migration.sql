@@ -1,0 +1,2 @@
+ALTER TABLE "Video"
+ALTER COLUMN "sizeBytes" TYPE BIGINT;

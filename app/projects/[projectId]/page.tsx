@@ -3,6 +3,7 @@ import { EditorWorkspace } from "@/components/editor-workspace";
 import { requireUserAccount } from "@/lib/auth";
 import { hasActiveSubscription, refreshSubscriptionFromStripe } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
+import { toVideoDTO } from "@/lib/video-dto";
 
 export const dynamic = "force-dynamic";
 
@@ -33,5 +34,14 @@ export default async function ProjectPage({
     notFound();
   }
 
-  return <EditorWorkspace project={project} />;
+  return (
+    <EditorWorkspace
+      project={{
+        clips: project.clips,
+        id: project.id,
+        name: project.name,
+        video: toVideoDTO(project.video),
+      }}
+    />
+  );
 }

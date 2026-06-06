@@ -2,6 +2,7 @@ import { ProjectHome } from "@/components/project-home";
 import { requireUserAccount } from "@/lib/auth";
 import { hasActiveSubscription, refreshSubscriptionFromStripe } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
+import { toProjectCardDTO } from "@/lib/video-dto";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -25,5 +26,5 @@ export default async function AppHomePage() {
     },
   });
 
-  return <ProjectHome projects={projects} />;
+  return <ProjectHome projects={projects.map(toProjectCardDTO)} />;
 }
