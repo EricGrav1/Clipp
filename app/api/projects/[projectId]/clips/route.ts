@@ -3,7 +3,6 @@ import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription, requireRenderEntitlement } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
-import { processRenderJob } from "@/lib/render-jobs";
 import { deleteStoredMedia, prepareClipOutput } from "@/lib/storage";
 import {
   assertClipDuration,
@@ -105,13 +104,7 @@ export async function POST(
       data: { durationSeconds: videoDuration },
     });
 
-    await processRenderJob(renderJob.id).catch(() => undefined);
-
-    const renderedClip = await prisma.clip.findUniqueOrThrow({
-      where: { id: clip.id },
-    });
-
-    return NextResponse.json({ clip: renderedClip }, { status: 201 });
+    return NextResponse.json({ clip, renderJob }, { status: 201 });
   } catch (error) {
     if (clipId) {
       await prisma.clip

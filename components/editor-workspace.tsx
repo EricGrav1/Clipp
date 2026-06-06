@@ -9,7 +9,7 @@ import {
   Upload,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClipTimeline } from "@/components/clip-timeline";
 import { ClipsPane, type ClipItem } from "@/components/clips-pane";
 import { Button } from "@/components/ui/button";
@@ -63,9 +63,14 @@ async function readJsonPayload<T extends { error?: string }>(
   }
 
   const text = await response.text().catch(() => "");
+  const isHtml = text.trimStart().toLowerCase().startsWith("<!doctype html");
 
   return {
-    error: text ? `${fallback} ${text}` : fallback,
+    error: isHtml
+      ? `${fallback} The server returned an HTML error page instead of JSON. Check the Vercel function logs for the matching request.`
+      : text
+        ? `${fallback} ${text.slice(0, 500)}`
+        : fallback,
   } as T;
 }
 
@@ -198,6 +203,7 @@ async function uploadMultipartFile({
 export function EditorWorkspace({ project }: { project: EditorProject }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const startedRenderClipIdsRef = useRef(new Set<string>());
   const [video, setVideo] = useState(project.video);
   const [clips, setClips] = useState(project.clips);
   const [currentTime, setCurrentTime] = useState(0);
@@ -222,6 +228,50 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
 
   const maxCustomDuration = Math.max(1, Math.floor(videoDuration || 1));
   const actualClipDuration = Math.max(0, selectedEndTime - clipStartTime);
+
+  const startClipRender = useCallback(async (clipId: string) => {
+    if (startedRenderClipIdsRef.current.has(clipId)) {
+      return;
+    }
+
+    startedRenderClipIdsRef.current.add(clipId);
+
+    try {
+      const response = await fetch(`/api/clips/${clipId}/render`, {
+        method: "POST",
+      });
+      const payload = await readJsonPayload<{
+        clip?: ClipItem;
+        error?: string;
+      }>(response, "Could not render clip.");
+
+      if (!response.ok || !payload.clip) {
+        throw new Error(payload.error ?? "Could not render clip.");
+      }
+
+      setClips((existing) =>
+        existing.map((clip) => (clip.id === clipId ? payload.clip! : clip)),
+      );
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : "Could not render clip.";
+      setClips((existing) =>
+        existing.map((clip) =>
+          clip.id === clipId
+            ? { ...clip, error: message, status: "FAILED" }
+          : clip,
+        ),
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    for (const clip of clips) {
+      if (clip.status === "QUEUED" || clip.status === "RENDERING") {
+        void startClipRender(clip.id);
+      }
+    }
+  }, [clips, startClipRender]);
 
   function seekToStart(startTime: number) {
     const safeStart = Math.max(0, Math.min(startTime, Math.max(0, videoDuration - 0.05)));
@@ -385,6 +435,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
       const payload = await readJsonPayload<{
         clip?: ClipItem;
         error?: string;
+        renderJob?: { id: string };
       }>(response, "Could not create clip.");
 
       if (!response.ok || !payload.clip) {
@@ -396,6 +447,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
         nextClip,
         ...existing.filter((clip) => clip.id !== nextClip.id),
       ]);
+      void startClipRender(nextClip.id);
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
