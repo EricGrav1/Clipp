@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import ffmpegStaticPath from "ffmpeg-static";
 
 type RenderClipInput = {
   inputPath: string;
@@ -14,7 +15,10 @@ export function renderClip({
   duration,
 }: RenderClipInput) {
   return new Promise<void>((resolve, reject) => {
-    const ffmpeg = spawn("ffmpeg", [
+    const ffmpegBinary = process.env.FFMPEG_PATH || ffmpegStaticPath || "ffmpeg";
+    const ffmpeg = spawn(ffmpegBinary, [
+      "-hide_banner",
+      "-nostdin",
       "-y",
       "-ss",
       startTime.toFixed(3),
@@ -40,7 +44,7 @@ export function renderClip({
       reject(
         new Error(
           error.message.includes("ENOENT")
-            ? "FFmpeg is not installed or not available on PATH."
+            ? "FFmpeg binary is not available. Install FFmpeg or configure FFMPEG_PATH."
             : error.message,
         ),
       );
