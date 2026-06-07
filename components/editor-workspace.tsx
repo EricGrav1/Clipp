@@ -229,6 +229,20 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
   const maxCustomDuration = Math.max(1, Math.floor(videoDuration || 1));
   const actualClipDuration = Math.max(0, selectedEndTime - clipStartTime);
 
+  const refreshClips = useCallback(async () => {
+    const response = await fetch(`/api/projects/${project.id}/clips`);
+    const payload = await readJsonPayload<{
+      clips?: ClipItem[];
+      error?: string;
+    }>(response, "Could not refresh clips.");
+
+    if (!response.ok || !payload.clips) {
+      throw new Error(payload.error ?? "Could not refresh clips.");
+    }
+
+    setClips(payload.clips);
+  }, [project.id]);
+
   const startClipRender = useCallback(async (clipId: string) => {
     if (startedRenderClipIdsRef.current.has(clipId)) {
       return;
@@ -272,6 +286,22 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
       }
     }
   }, [clips, startClipRender]);
+
+  useEffect(() => {
+    const hasProcessingClip = clips.some(
+      (clip) => clip.status === "QUEUED" || clip.status === "RENDERING",
+    );
+
+    if (!hasProcessingClip) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void refreshClips().catch(() => undefined);
+    }, 3_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [clips, refreshClips]);
 
   function seekToStart(startTime: number) {
     const safeStart = Math.max(0, Math.min(startTime, Math.max(0, videoDuration - 0.05)));

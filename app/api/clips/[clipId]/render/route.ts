@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription } from "@/lib/billing";
@@ -36,13 +36,38 @@ export async function POST(
       throw new ValidationError("Render job not found.", 404);
     }
 
-    if (renderJob.status === "COMPLETE") {
+    const isRecentlyRendering =
+      renderJob.status === "RENDERING" &&
+      renderJob.startedAt &&
+      Date.now() - renderJob.startedAt.getTime() < 4 * 60 * 1000;
+
+    if (renderJob.status === "COMPLETE" || isRecentlyRendering) {
       return NextResponse.json({ clip: renderJob.clip, job: renderJob });
     }
 
-    const job = await processRenderJob(renderJob.id);
-    const clip = await prisma.clip.findUniqueOrThrow({
-      where: { id: clipId },
+    const [clip, job] = await prisma.$transaction([
+      prisma.clip.update({
+        where: { id: clipId },
+        data: { status: "QUEUED", error: null },
+      }),
+      prisma.renderJob.update({
+        where: { id: renderJob.id },
+        data: {
+          error: null,
+          finishedAt: null,
+          status: "QUEUED",
+        },
+      }),
+    ]);
+
+    after(async () => {
+      await processRenderJob(renderJob.id).catch((error) => {
+        console.error("Background render retry failed", {
+          clipId,
+          error,
+          renderJobId: renderJob.id,
+        });
+      });
     });
 
     return NextResponse.json({ clip, job });

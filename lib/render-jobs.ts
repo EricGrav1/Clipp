@@ -49,6 +49,14 @@ export async function processRenderJob(jobId: string) {
     return job;
   }
 
+  if (
+    job.status === "RENDERING" &&
+    job.startedAt &&
+    Date.now() - job.startedAt.getTime() < 4 * 60 * 1000
+  ) {
+    return job;
+  }
+
   const renderSource = await getRenderSource(job.clip.video);
   const outputPath = job.clip.path;
 
