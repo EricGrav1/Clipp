@@ -43,9 +43,41 @@ SOCIAL_WEBHOOK_SECRET=""
 
 For production posting, rendered clip URLs must be public HTTPS URLs. Use `R2_PUBLIC_BASE_URL` or another durable CDN URL so the social provider can fetch scheduled media.
 
-## FFmpeg
+## Rendering Worker
 
-Clip rendering expects `ffmpeg` to be installed and available on `PATH`.
+Local development can render from the Next.js API route. Production should run
+FFmpeg in a separate long-running worker service because Vercel functions are
+not reliable for video rendering.
+
+Worker command:
+
+```bash
+npm run worker
+```
+
+The worker polls Postgres for queued render jobs, runs FFmpeg, uploads finished
+clips to R2, and marks clips `READY` or `FAILED`.
+
+Required worker environment:
+
+```env
+DATABASE_URL="postgresql://..."
+R2_ACCOUNT_ID=""
+R2_ACCESS_KEY_ID=""
+R2_SECRET_ACCESS_KEY=""
+R2_BUCKET=""
+R2_PUBLIC_BASE_URL=""
+```
+
+Optional worker settings:
+
+```env
+RENDER_WORKER_POLL_MS="3000"
+RENDER_WORKER_STALE_AFTER_MS="600000"
+```
+
+Set `RENDER_IN_API=true` only for temporary debugging. Production should leave it
+unset so Vercel queues work and the worker performs rendering.
 
 ## Production Launch Notes
 
@@ -54,6 +86,6 @@ Clip rendering expects `ffmpeg` to be installed and available on `PATH`.
 - Create Coupons and Promotion Codes in Stripe Dashboard for campaigns; Checkout has promotion-code entry enabled for subscriptions.
 - Use a hosted Postgres database such as Neon for production.
 - Use Cloudflare R2 or S3-compatible object storage for source videos and clips.
-- Run FFmpeg rendering in a separate worker for production. The worker can call `/api/internal/render-jobs/[jobId]` with `x-render-worker-secret`.
+- Run FFmpeg rendering in a separate worker for production with `npm run worker`.
 - Configure Ayrshare webhooks at `/api/social/webhook` and send `x-social-webhook-secret` when `SOCIAL_WEBHOOK_SECRET` is set.
 - Replace starter Terms/Privacy copy with counsel-reviewed policies before promoting publicly.

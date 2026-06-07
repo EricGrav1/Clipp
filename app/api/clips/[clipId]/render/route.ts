@@ -9,6 +9,18 @@ import { ValidationError } from "@/lib/validation";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
+function canRenderInApiRoute() {
+  if (process.env.RENDER_IN_API === "true") {
+    return true;
+  }
+
+  if (process.env.RENDER_IN_API === "false") {
+    return false;
+  }
+
+  return process.env.NODE_ENV !== "production";
+}
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ clipId: string }> },
@@ -60,15 +72,17 @@ export async function POST(
       }),
     ]);
 
-    after(async () => {
-      await processRenderJob(renderJob.id).catch((error) => {
-        console.error("Background render retry failed", {
-          clipId,
-          error,
-          renderJobId: renderJob.id,
+    if (canRenderInApiRoute()) {
+      after(async () => {
+        await processRenderJob(renderJob.id).catch((error) => {
+          console.error("Background render retry failed", {
+            clipId,
+            error,
+            renderJobId: renderJob.id,
+          });
         });
       });
-    });
+    }
 
     return NextResponse.json({ clip, job });
   } catch (error) {
