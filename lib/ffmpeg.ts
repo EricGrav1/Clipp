@@ -56,7 +56,7 @@ export function renderClip({
       return;
     }
 
-    const ffmpeg = spawn(ffmpegBinary, [
+    const args = [
       "-hide_banner",
       "-nostdin",
       "-y",
@@ -64,6 +64,12 @@ export function renderClip({
       startTime.toFixed(3),
       "-i",
       inputPath,
+      "-map",
+      "0:v:0",
+      "-map",
+      "0:a?",
+      "-dn",
+      "-sn",
       "-t",
       duration.toFixed(3),
       "-c:v",
@@ -73,7 +79,9 @@ export function renderClip({
       "-movflags",
       "+faststart",
       outputPath,
-    ]);
+    ];
+
+    const ffmpeg = spawn(ffmpegBinary, args);
 
     let stderr = "";
     ffmpeg.stderr.on("data", (chunk) => {
@@ -90,14 +98,18 @@ export function renderClip({
       );
     });
 
-    ffmpeg.on("close", (code) => {
+    ffmpeg.on("close", (code, signal) => {
       if (code === 0) {
         resolve();
         return;
       }
 
       const usefulError = stderr.split("\n").slice(-8).join("\n").trim();
-      reject(new Error(usefulError || `FFmpeg exited with code ${code}.`));
+      const exitReason =
+        code === null
+          ? `FFmpeg was terminated by signal ${signal ?? "unknown"}.`
+          : `FFmpeg exited with code ${code}.`;
+      reject(new Error(usefulError || `${exitReason} Command: ${ffmpegBinary} ${args.join(" ")}`));
     });
   });
 }
