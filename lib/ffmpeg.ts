@@ -83,10 +83,20 @@ export function renderClip({
       "0:a?",
       "-dn",
       "-sn",
+      "-map_metadata",
+      "-1",
+      "-map_chapters",
+      "-1",
       "-t",
       duration.toFixed(3),
       "-c:v",
       "libx264",
+      "-preset",
+      "ultrafast",
+      "-pix_fmt",
+      "yuv420p",
+      "-threads",
+      "1",
       "-c:a",
       "aac",
       "-movflags",
@@ -117,12 +127,18 @@ export function renderClip({
         return;
       }
 
-      const usefulError = stderr.split("\n").slice(-8).join("\n").trim();
+      const usefulError = stderr.split("\n").slice(-40).join("\n").trim();
       const exitReason =
         code === null
           ? `FFmpeg was terminated by signal ${signal ?? "unknown"}.`
           : `FFmpeg exited with code ${code}.`;
-      reject(new Error(usefulError || `${exitReason} Command: ${ffmpegBinary} ${args.join(" ")}`));
+      reject(
+        new Error(
+          usefulError
+            ? `${exitReason}\n\nFFmpeg stderr:\n${usefulError}`
+            : `${exitReason} Command: ${ffmpegBinary} ${args.join(" ")}`,
+        ),
+      );
     });
   });
 }
