@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { chmodSync, existsSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import ffmpegStaticPath from "ffmpeg-static";
 
@@ -51,6 +51,19 @@ export function renderClip({
             "ffmpeg-static",
             "ffmpeg",
           )}, and ffmpeg-static export ${ffmpegStaticPath ?? "null"}.`,
+        ),
+      );
+      return;
+    }
+
+    try {
+      mkdirSync(path.dirname(outputPath), { recursive: true });
+    } catch (error) {
+      reject(
+        new Error(
+          error instanceof Error
+            ? `Could not create clip output directory: ${error.message}`
+            : "Could not create clip output directory.",
         ),
       );
       return;
