@@ -33,87 +33,8 @@ function resolveFfmpegBinary() {
   return null;
 }
 
-export function renderClip({
-  inputPath,
-  outputPath,
-  startTime,
-  duration,
-}: RenderClipInput) {
+function runFfmpeg(ffmpegBinary: string, args: string[]) {
   return new Promise<void>((resolve, reject) => {
-    const ffmpegBinary = resolveFfmpegBinary();
-
-    if (!ffmpegBinary) {
-      reject(
-        new Error(
-          `FFmpeg binary was not found at runtime. Checked FFMPEG_PATH, ${path.join(
-            process.cwd(),
-            "node_modules",
-            "ffmpeg-static",
-            "ffmpeg",
-          )}, and ffmpeg-static export ${ffmpegStaticPath ?? "null"}.`,
-        ),
-      );
-      return;
-    }
-
-    try {
-      mkdirSync(path.dirname(outputPath), { recursive: true });
-    } catch (error) {
-      reject(
-        new Error(
-          error instanceof Error
-            ? `Could not create clip output directory: ${error.message}`
-            : "Could not create clip output directory.",
-        ),
-      );
-      return;
-    }
-
-    const args = [
-      "-hide_banner",
-      "-nostdin",
-      "-y",
-      "-ss",
-      startTime.toFixed(3),
-      "-i",
-      inputPath,
-      "-map",
-      "0:v:0",
-      "-map",
-      "0:a:0?",
-      "-dn",
-      "-sn",
-      "-map_metadata",
-      "-1",
-      "-map_chapters",
-      "-1",
-      "-t",
-      duration.toFixed(3),
-      "-c:v",
-      "libx264",
-      "-preset",
-      "ultrafast",
-      "-vf",
-      "scale='min(1080,iw)':-2",
-      "-pix_fmt",
-      "yuv420p",
-      "-crf",
-      "23",
-      "-maxrate",
-      "6M",
-      "-bufsize",
-      "12M",
-      "-threads",
-      "1",
-      "-c:a",
-      "aac",
-      "-b:a",
-      "128k",
-      "-movflags",
-      "+faststart",
-      outputPath,
-    ];
-
     const ffmpeg = spawn(ffmpegBinary, args);
 
     let stderr = "";
@@ -151,4 +72,101 @@ export function renderClip({
       );
     });
   });
+}
+
+function baseClipArgs({
+  inputPath,
+  startTime,
+  duration,
+}: RenderClipInput) {
+  return [
+    "-hide_banner",
+    "-nostdin",
+    "-y",
+    "-ss",
+    startTime.toFixed(3),
+    "-i",
+    inputPath,
+    "-map",
+    "0:v:0",
+    "-map",
+    "0:a:0?",
+    "-dn",
+    "-sn",
+    "-map_metadata",
+    "-1",
+    "-map_chapters",
+    "-1",
+    "-t",
+    duration.toFixed(3),
+  ];
+}
+
+export async function renderClip(input: RenderClipInput) {
+  const ffmpegBinary = resolveFfmpegBinary();
+  const { outputPath } = input;
+
+  if (!ffmpegBinary) {
+    throw new Error(
+      `FFmpeg binary was not found at runtime. Checked FFMPEG_PATH, ${path.join(
+        process.cwd(),
+        "node_modules",
+        "ffmpeg-static",
+        "ffmpeg",
+      )}, and ffmpeg-static export ${ffmpegStaticPath ?? "null"}.`,
+    );
+  }
+
+  try {
+    mkdirSync(path.dirname(outputPath), { recursive: true });
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? `Could not create clip output directory: ${error.message}`
+        : "Could not create clip output directory.",
+    );
+  }
+
+  try {
+    await runFfmpeg(ffmpegBinary, [
+      ...baseClipArgs(input),
+      "-c",
+      "copy",
+      "-avoid_negative_ts",
+      "make_zero",
+      "-movflags",
+      "+faststart",
+      outputPath,
+    ]);
+    return;
+  } catch (error) {
+    console.warn("[ffmpeg] fast stream copy failed; falling back to transcode", error);
+  }
+
+  await runFfmpeg(ffmpegBinary, [
+    ...baseClipArgs(input),
+    "-c:v",
+    "libx264",
+    "-preset",
+    "ultrafast",
+    "-vf",
+    "scale='min(1080,iw)':-2",
+    "-pix_fmt",
+    "yuv420p",
+    "-crf",
+    "23",
+    "-maxrate",
+    "6M",
+    "-bufsize",
+    "12M",
+    "-threads",
+    "1",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    "-movflags",
+    "+faststart",
+    outputPath,
+  ]);
 }
