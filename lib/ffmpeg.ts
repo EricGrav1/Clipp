@@ -33,6 +33,21 @@ function resolveFfmpegBinary() {
   return null;
 }
 
+function resolveFfprobeBinary(ffmpegBinary: string) {
+  const candidates = [
+    process.env.FFPROBE_PATH,
+    path.join(path.dirname(ffmpegBinary), "ffprobe"),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (candidate && existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
 function runFfmpeg(ffmpegBinary: string, args: string[]) {
   return new Promise<void>((resolve, reject) => {
     const ffmpeg = spawn(ffmpegBinary, args);
@@ -72,6 +87,72 @@ function runFfmpeg(ffmpegBinary: string, args: string[]) {
       );
     });
   });
+}
+
+type SourceCodecs = {
+  audioCodec: string | null;
+  videoCodec: string | null;
+};
+
+function probeSourceCodecs(ffprobeBinary: string, inputPath: string) {
+  return new Promise<SourceCodecs>((resolve, reject) => {
+    const ffprobe = spawn(ffprobeBinary, [
+      "-v",
+      "error",
+      "-select_streams",
+      "v:0",
+      "-show_entries",
+      "stream=codec_name",
+      "-of",
+      "default=noprint_wrappers=1:nokey=1",
+      inputPath,
+    ]);
+
+    let videoCodec = "";
+    let videoError = "";
+
+    ffprobe.stdout.on("data", (chunk) => {
+      videoCodec += chunk.toString();
+    });
+    ffprobe.stderr.on("data", (chunk) => {
+      videoError += chunk.toString();
+    });
+    ffprobe.on("error", reject);
+    ffprobe.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(videoError.trim() || `ffprobe exited with code ${code}.`));
+        return;
+      }
+
+      const audioProbe = spawn(ffprobeBinary, [
+        "-v",
+        "error",
+        "-select_streams",
+        "a:0",
+        "-show_entries",
+        "stream=codec_name",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        inputPath,
+      ]);
+
+      let audioCodec = "";
+      audioProbe.stdout.on("data", (chunk) => {
+        audioCodec += chunk.toString();
+      });
+      audioProbe.on("error", reject);
+      audioProbe.on("close", () => {
+        resolve({
+          audioCodec: audioCodec.trim().split("\n")[0] || null,
+          videoCodec: videoCodec.trim().split("\n")[0] || null,
+        });
+      });
+    });
+  });
+}
+
+function canStreamCopyForBrowserPreview(codecs: SourceCodecs) {
+  return codecs.videoCodec === "h264" && (!codecs.audioCodec || codecs.audioCodec === "aac");
 }
 
 function baseClipArgs({
@@ -117,6 +198,8 @@ export async function renderClip(input: RenderClipInput) {
     );
   }
 
+  const ffprobeBinary = resolveFfprobeBinary(ffmpegBinary);
+
   try {
     mkdirSync(path.dirname(outputPath), { recursive: true });
   } catch (error) {
@@ -127,20 +210,29 @@ export async function renderClip(input: RenderClipInput) {
     );
   }
 
-  try {
-    await runFfmpeg(ffmpegBinary, [
-      ...baseClipArgs(input),
-      "-c",
-      "copy",
-      "-avoid_negative_ts",
-      "make_zero",
-      "-movflags",
-      "+faststart",
-      outputPath,
-    ]);
-    return;
-  } catch (error) {
-    console.warn("[ffmpeg] fast stream copy failed; falling back to transcode", error);
+  if (ffprobeBinary) {
+    const codecs = await probeSourceCodecs(ffprobeBinary, input.inputPath).catch((error) => {
+      console.warn("[ffmpeg] source codec probe failed; falling back to transcode", error);
+      return null;
+    });
+
+    if (codecs && canStreamCopyForBrowserPreview(codecs)) {
+      try {
+        await runFfmpeg(ffmpegBinary, [
+          ...baseClipArgs(input),
+          "-c",
+          "copy",
+          "-avoid_negative_ts",
+          "make_zero",
+          "-movflags",
+          "+faststart",
+          outputPath,
+        ]);
+        return;
+      } catch (error) {
+        console.warn("[ffmpeg] fast stream copy failed; falling back to transcode", error);
+      }
+    }
   }
 
   await runFfmpeg(ffmpegBinary, [
