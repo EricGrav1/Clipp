@@ -310,6 +310,8 @@ export function ClipsPane({
               const isBusy = busyClipId === clip.id;
               const isSharing = sharingClipId === clip.id;
               const isReady = clip.status === "READY" && clip.url;
+              const isPreviewUnavailable =
+                isReady && clip.error?.startsWith("Preview unavailable");
               const isProcessing =
                 clip.status !== "READY" && clip.status !== "FAILED";
               const statusLabel =
@@ -366,17 +368,27 @@ export function ClipsPane({
                   </div>
 
                   {clip.error ? (
-                    <p className="mb-3 line-clamp-3 rounded-md bg-destructive/10 p-2 text-xs text-destructive">
+                    <p
+                      className={`mb-3 line-clamp-3 rounded-md p-2 text-xs ${
+                        clip.status === "READY"
+                          ? "bg-warning/10 text-warning"
+                          : "bg-destructive/10 text-destructive"
+                      }`}
+                    >
                       {clip.error}
                     </p>
                   ) : null}
 
                   <div className="grid grid-cols-6 gap-2">
                     <Button
-                      disabled={!isReady}
+                      disabled={!isReady || isPreviewUnavailable}
                       onClick={() => setPreviewClip(clip)}
                       size="icon"
-                      title="Preview clip"
+                      title={
+                        isPreviewUnavailable
+                          ? "Preview unavailable; download clip instead"
+                          : "Preview clip"
+                      }
                       variant="secondary"
                     >
                       <Eye className="h-4 w-4" />

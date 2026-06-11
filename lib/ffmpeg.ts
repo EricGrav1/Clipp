@@ -10,6 +10,11 @@ type RenderClipInput = {
   duration: number;
 };
 
+type RenderClipResult = {
+  previewReady: boolean;
+  warning: string | null;
+};
+
 function resolveFfmpegBinary() {
   const candidates = [
     process.env.FFMPEG_PATH,
@@ -155,6 +160,48 @@ function canStreamCopyForBrowserPreview(codecs: SourceCodecs) {
   return codecs.videoCodec === "h264" && (!codecs.audioCodec || codecs.audioCodec === "aac");
 }
 
+function fastCopyArgs(input: RenderClipInput) {
+  return [
+    ...baseClipArgs(input),
+    "-c",
+    "copy",
+    "-avoid_negative_ts",
+    "make_zero",
+    "-movflags",
+    "+faststart",
+    input.outputPath,
+  ];
+}
+
+function transcodeArgs(input: RenderClipInput) {
+  return [
+    ...baseClipArgs(input),
+    "-c:v",
+    "libx264",
+    "-preset",
+    "ultrafast",
+    "-vf",
+    "scale='min(1080,iw)':-2",
+    "-pix_fmt",
+    "yuv420p",
+    "-crf",
+    "23",
+    "-maxrate",
+    "6M",
+    "-bufsize",
+    "12M",
+    "-threads",
+    "1",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    "-movflags",
+    "+faststart",
+    input.outputPath,
+  ];
+}
+
 function baseClipArgs({
   inputPath,
   startTime,
@@ -183,7 +230,7 @@ function baseClipArgs({
   ];
 }
 
-export async function renderClip(input: RenderClipInput) {
+export async function renderClip(input: RenderClipInput): Promise<RenderClipResult> {
   const ffmpegBinary = resolveFfmpegBinary();
   const { outputPath } = input;
 
@@ -218,47 +265,25 @@ export async function renderClip(input: RenderClipInput) {
 
     if (codecs && canStreamCopyForBrowserPreview(codecs)) {
       try {
-        await runFfmpeg(ffmpegBinary, [
-          ...baseClipArgs(input),
-          "-c",
-          "copy",
-          "-avoid_negative_ts",
-          "make_zero",
-          "-movflags",
-          "+faststart",
-          outputPath,
-        ]);
-        return;
+        await runFfmpeg(ffmpegBinary, fastCopyArgs(input));
+        return { previewReady: true, warning: null };
       } catch (error) {
         console.warn("[ffmpeg] fast stream copy failed; falling back to transcode", error);
       }
     }
   }
 
-  await runFfmpeg(ffmpegBinary, [
-    ...baseClipArgs(input),
-    "-c:v",
-    "libx264",
-    "-preset",
-    "ultrafast",
-    "-vf",
-    "scale='min(1080,iw)':-2",
-    "-pix_fmt",
-    "yuv420p",
-    "-crf",
-    "23",
-    "-maxrate",
-    "6M",
-    "-bufsize",
-    "12M",
-    "-threads",
-    "1",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "128k",
-    "-movflags",
-    "+faststart",
-    outputPath,
-  ]);
+  try {
+    await runFfmpeg(ffmpegBinary, transcodeArgs(input));
+    return { previewReady: true, warning: null };
+  } catch (transcodeError) {
+    console.warn("[ffmpeg] browser-safe transcode failed; trying downloadable fast copy", transcodeError);
+
+    await runFfmpeg(ffmpegBinary, fastCopyArgs(input));
+    return {
+      previewReady: false,
+      warning:
+        "Preview unavailable for this source codec. Download the harvested clip instead.",
+    };
+  }
 }

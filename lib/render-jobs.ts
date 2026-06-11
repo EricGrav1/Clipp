@@ -79,7 +79,7 @@ export async function processRenderJob(jobId: string) {
   });
 
   try {
-    await renderClip({
+    const renderResult = await renderClip({
       inputPath: renderSource.source,
       outputPath,
       startTime: job.clip.startTime,
@@ -94,7 +94,7 @@ export async function processRenderJob(jobId: string) {
     const [, updatedJob] = await prisma.$transaction([
       prisma.clip.update({
         where: { id: job.clipId },
-        data: { status: "READY", error: null },
+        data: { status: "READY", error: renderResult.warning },
       }),
       prisma.renderJob.update({
         where: { id: job.id },
