@@ -52,11 +52,17 @@ function getR2Client() {
 }
 
 function mediaUrl(objectKey: string, localUrl: string) {
-  if (process.env.R2_PUBLIC_BASE_URL) {
-    return `${process.env.R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${objectKey}`;
+  const publicBaseUrl = process.env.R2_PUBLIC_BASE_URL;
+
+  if (publicBaseUrl && !publicBaseUrl.includes(".r2.cloudflarestorage.com")) {
+    return `${publicBaseUrl.replace(/\/$/, "")}/${objectKey}`;
   }
 
   return getR2Client() ? `/api/media/${objectKey}` : localUrl;
+}
+
+export function getStoredMediaUrl(objectKey: string | null | undefined, localUrl: string) {
+  return objectKey ? mediaUrl(objectKey, localUrl) : localUrl;
 }
 
 export async function createDirectVideoUpload(
@@ -289,6 +295,21 @@ export async function getSignedMediaUrl(objectKey: string) {
       Key: objectKey,
     }),
     { expiresIn: 60 * 10 },
+  );
+}
+
+export async function getStoredMediaObject(objectKey: string) {
+  const client = getR2Client();
+
+  if (!client) {
+    return null;
+  }
+
+  return client.send(
+    new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: objectKey,
+    }),
   );
 }
 

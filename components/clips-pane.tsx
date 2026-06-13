@@ -208,6 +208,44 @@ export function ClipsPane({
     }
   }
 
+  async function downloadClip(clip: ClipItem) {
+    setError("");
+
+    if (!clip.url) {
+      setError("This clip is not ready to download yet.");
+      return;
+    }
+
+    setBusyClipId(clip.id);
+
+    try {
+      const downloadUrl = clip.url.startsWith("/api/media/")
+        ? `${clip.url}?download=1`
+        : clip.url;
+      const response = await fetch(downloadUrl);
+
+      if (!response.ok) {
+        throw new Error("Could not download the clip.");
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = `${clip.title.replace(/[^\w.-]+/g, "-") || "clip"}.mp4`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error ? caughtError.message : "Could not download clip.",
+      );
+    } finally {
+      setBusyClipId(null);
+    }
+  }
+
   async function renameClip(clipId: string) {
     setError("");
     setBusyClipId(clipId);
@@ -309,9 +347,9 @@ export function ClipsPane({
               const isEditing = editingId === clip.id;
               const isBusy = busyClipId === clip.id;
               const isSharing = sharingClipId === clip.id;
-              const isReady = clip.status === "READY" && clip.url;
+              const isReady = clip.status === "READY" && Boolean(clip.url);
               const isPreviewUnavailable =
-                isReady && clip.error?.startsWith("Preview unavailable");
+                isReady && Boolean(clip.error?.startsWith("Preview unavailable"));
               const isProcessing =
                 clip.status !== "READY" && clip.status !== "FAILED";
               const statusLabel =
@@ -393,17 +431,19 @@ export function ClipsPane({
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {isReady ? (
-                      <Button asChild size="icon" title="Download clip" variant="secondary">
-                        <a href={clip.url ?? ""} download aria-label="Download clip">
-                          <Download className="h-4 w-4" />
-                        </a>
-                      </Button>
-                    ) : (
-                      <Button disabled size="icon" title="Download clip" variant="secondary">
+                    <Button
+                      disabled={!isReady || isBusy}
+                      onClick={() => downloadClip(clip)}
+                      size="icon"
+                      title="Download clip"
+                      variant="secondary"
+                    >
+                      {isBusy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
                         <Download className="h-4 w-4" />
-                      </Button>
-                    )}
+                      )}
+                    </Button>
                     <Button
                       disabled={!isReady || isSharing || !isShareSupported}
                       onClick={() => shareClip(clip)}

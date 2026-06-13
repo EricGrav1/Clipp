@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { EditorWorkspace } from "@/components/editor-workspace";
 import { requireUserAccount } from "@/lib/auth";
 import { hasActiveSubscription, refreshSubscriptionFromStripe } from "@/lib/billing";
+import { toClipDTO } from "@/lib/clip-dto";
 import { prisma } from "@/lib/prisma";
 import { toVideoDTO } from "@/lib/video-dto";
 
@@ -37,7 +38,7 @@ export default async function ProjectPage({
   return (
     <EditorWorkspace
       project={{
-        clips: project.clips,
+        clips: project.clips.map(toClipDTO),
         id: project.id,
         name: project.name,
         video: toVideoDTO(project.video),

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription } from "@/lib/billing";
+import { toClipDTO } from "@/lib/clip-dto";
 import { prisma } from "@/lib/prisma";
 import { deleteStoredMedia } from "@/lib/storage";
 import { assertClipTitle, ValidationError } from "@/lib/validation";
@@ -32,7 +33,7 @@ export async function PATCH(
       data: { title },
     });
 
-    return NextResponse.json({ clip });
+    return NextResponse.json({ clip: toClipDTO(clip) });
   } catch (error) {
     return jsonError(error);
   }

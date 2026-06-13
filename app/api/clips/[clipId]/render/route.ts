@@ -2,6 +2,7 @@ import { after, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription } from "@/lib/billing";
+import { toClipDTO } from "@/lib/clip-dto";
 import { prisma } from "@/lib/prisma";
 import { processRenderJob } from "@/lib/render-jobs";
 import { ValidationError } from "@/lib/validation";
@@ -54,7 +55,7 @@ export async function POST(
       Date.now() - renderJob.startedAt.getTime() < 4 * 60 * 1000;
 
     if (renderJob.status === "COMPLETE" || isRecentlyRendering) {
-      return NextResponse.json({ clip: renderJob.clip, job: renderJob });
+      return NextResponse.json({ clip: toClipDTO(renderJob.clip), job: renderJob });
     }
 
     const [clip, job] = await prisma.$transaction([
@@ -84,7 +85,7 @@ export async function POST(
       });
     }
 
-    return NextResponse.json({ clip, job });
+    return NextResponse.json({ clip: toClipDTO(clip), job });
   } catch (error) {
     return jsonError(error);
   }

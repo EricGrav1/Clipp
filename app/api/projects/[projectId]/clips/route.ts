@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription, requireRenderEntitlement } from "@/lib/billing";
+import { toClipDTO } from "@/lib/clip-dto";
 import { prisma } from "@/lib/prisma";
 import { deleteStoredMedia, prepareClipOutput } from "@/lib/storage";
 import {
@@ -28,7 +29,7 @@ export async function GET(
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ clips });
+    return NextResponse.json({ clips: clips.map(toClipDTO) });
   } catch (error) {
     return jsonError(error);
   }
@@ -104,7 +105,7 @@ export async function POST(
       data: { durationSeconds: videoDuration },
     });
 
-    return NextResponse.json({ clip, renderJob }, { status: 201 });
+    return NextResponse.json({ clip: toClipDTO(clip), renderJob }, { status: 201 });
   } catch (error) {
     if (clipId) {
       await prisma.clip
