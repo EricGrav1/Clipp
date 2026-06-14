@@ -32,6 +32,32 @@ export type ClipItem = {
   error: string | null;
 };
 
+const PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  bluesky: "Bluesky",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  pinterest: "Pinterest",
+  reddit: "Reddit",
+  threads: "Threads",
+  tiktok: "TikTok",
+  twitter: "X",
+  youtube: "YouTube",
+};
+
+const PLATFORM_ORDER: SocialPlatform[] = [
+  "tiktok",
+  "instagram",
+  "youtube",
+  "linkedin",
+  "facebook",
+  "twitter",
+  "threads",
+  "bluesky",
+  "pinterest",
+  "reddit",
+];
+
 export function ClipsPane({
   clips,
   onClipsChange,
@@ -43,21 +69,27 @@ export function ClipsPane({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [busyClipId, setBusyClipId] = useState<string | null>(null);
-  const [sharingClipId, setSharingClipId] = useState<string | null>(null);
   const [scheduleClip, setScheduleClip] = useState<ClipItem | null>(null);
-  const [socialConnections, setSocialConnections] = useState<SocialConnectionDTO[]>([]);
-  const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>([]);
+  const [composerMode, setComposerMode] = useState<"share" | "schedule">(
+    "schedule",
+  );
+  const [socialConnections, setSocialConnections] = useState<
+    SocialConnectionDTO[]
+  >([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>(
+    [],
+  );
   const [sharedCaption, setSharedCaption] = useState("");
-  const [platformOverrides, setPlatformOverrides] = useState<Record<string, string>>({});
+  const [platformOverrides, setPlatformOverrides] = useState<
+    Record<string, string>
+  >({});
   const [scheduledAt, setScheduledAt] = useState("");
   const [timezone, setTimezone] = useState("UTC");
   const [isLoadingSocials, setIsLoadingSocials] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
-  const [isShareSupported, setIsShareSupported] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setIsShareSupported(typeof navigator.share === "function");
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
   }, []);
 
@@ -68,10 +100,15 @@ export function ClipsPane({
     return new Date(nextDate.getTime() - offsetMs).toISOString().slice(0, 16);
   }
 
-  function platformLabel(platform: string) {
-    return platform === "twitter"
-      ? "X"
-      : platform.charAt(0).toUpperCase() + platform.slice(1);
+  function sortPlatforms(platforms: SocialPlatform[]) {
+    return [...platforms].sort(
+      (first, second) =>
+        PLATFORM_ORDER.indexOf(first) - PLATFORM_ORDER.indexOf(second),
+    );
+  }
+
+  function platformLabel(platform: SocialPlatform) {
+    return PLATFORM_LABELS[platform] ?? platform;
   }
 
   async function loadSocialAccounts() {
@@ -87,8 +124,8 @@ export function ClipsPane({
 
       const connections = (payload.connections ?? []) as SocialConnectionDTO[];
       setSocialConnections(connections);
-      const platforms = connections[0]?.connectedPlatforms ?? [];
-      setSelectedPlatforms(platforms.slice(0, Math.min(platforms.length, 3)));
+      const platforms = sortPlatforms(connections[0]?.connectedPlatforms ?? []);
+      setSelectedPlatforms(platforms.slice(0, Math.min(platforms.length, 4)));
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -100,13 +137,22 @@ export function ClipsPane({
     }
   }
 
-  function openScheduleComposer(clip: ClipItem) {
+  function openComposer(clip: ClipItem, mode: "share" | "schedule") {
     setError("");
+    setComposerMode(mode);
     setScheduleClip(clip);
     setSharedCaption(clip.title);
     setPlatformOverrides({});
     setScheduledAt(defaultScheduleTime());
     loadSocialAccounts();
+  }
+
+  function openScheduleComposer(clip: ClipItem) {
+    openComposer(clip, "schedule");
+  }
+
+  function openShareComposer(clip: ClipItem) {
+    openComposer(clip, "share");
   }
 
   function togglePlatform(platform: SocialPlatform) {
@@ -126,17 +172,20 @@ export function ClipsPane({
     setIsScheduling(true);
 
     try {
-      const response = await fetch(`/api/clips/${scheduleClip.id}/scheduled-posts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          selectedPlatforms,
-          sharedCaption,
-          platformOverrides,
-          scheduledAt: new Date(scheduledAt).toISOString(),
-          timezone,
-        }),
-      });
+      const response = await fetch(
+        `/api/clips/${scheduleClip.id}/scheduled-posts`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            selectedPlatforms,
+            sharedCaption,
+            platformOverrides,
+            scheduledAt: new Date(scheduledAt).toISOString(),
+            timezone,
+          }),
+        },
+      );
       const payload = await response.json();
 
       if (!response.ok) {
@@ -152,59 +201,6 @@ export function ClipsPane({
       );
     } finally {
       setIsScheduling(false);
-    }
-  }
-
-  async function shareClip(clip: ClipItem) {
-    setError("");
-
-    if (!clip.url) {
-      setError("This clip is not ready to share yet.");
-      return;
-    }
-
-    if (!isShareSupported) {
-      setError("Sharing is not supported in this browser. Download the clip instead.");
-      return;
-    }
-
-    setSharingClipId(clip.id);
-
-    try {
-      const response = await fetch(clip.url);
-
-      if (!response.ok) {
-        throw new Error("Could not load the clip for sharing.");
-      }
-
-      const blob = await response.blob();
-      const fileName = clip.url.split("/").pop() ?? "clip.mp4";
-      const file = new File([blob], fileName, {
-        type: blob.type || "video/mp4",
-      });
-      const shareData: ShareData = {
-        files: [file],
-        text: clip.title,
-        title: clip.title,
-      };
-
-      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        throw new Error(
-          "This device cannot share video files from the browser. Download the clip instead.",
-        );
-      }
-
-      await navigator.share(shareData);
-    } catch (caughtError) {
-      if (caughtError instanceof DOMException && caughtError.name === "AbortError") {
-        return;
-      }
-
-      setError(
-        caughtError instanceof Error ? caughtError.message : "Could not share clip.",
-      );
-    } finally {
-      setSharingClipId(null);
     }
   }
 
@@ -239,7 +235,9 @@ export function ClipsPane({
       URL.revokeObjectURL(objectUrl);
     } catch (caughtError) {
       setError(
-        caughtError instanceof Error ? caughtError.message : "Could not download clip.",
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Could not download clip.",
       );
     } finally {
       setBusyClipId(null);
@@ -336,8 +334,8 @@ export function ClipsPane({
             <div>
               <Sprout className="mx-auto mb-3 h-8 w-8 animate-sway text-primary/70" />
               <p className="mx-auto max-w-56 text-sm leading-6 text-muted-foreground">
-                Your harvested clips land here — preview, rename, download, share,
-                or compost each one.
+                Your harvested clips land here — preview, rename, download,
+                share, or compost each one.
               </p>
             </div>
           </div>
@@ -346,10 +344,10 @@ export function ClipsPane({
             {clips.map((clip) => {
               const isEditing = editingId === clip.id;
               const isBusy = busyClipId === clip.id;
-              const isSharing = sharingClipId === clip.id;
               const isReady = clip.status === "READY" && Boolean(clip.url);
               const isPreviewUnavailable =
-                isReady && Boolean(clip.error?.startsWith("Preview unavailable"));
+                isReady &&
+                Boolean(clip.error?.startsWith("Preview unavailable"));
               const isProcessing =
                 clip.status !== "READY" && clip.status !== "FAILED";
               const statusLabel =
@@ -358,9 +356,6 @@ export function ClipsPane({
                   : clip.status === "FAILED"
                     ? "wilted"
                     : "growing";
-              const shareTitle = isShareSupported
-                ? "Share clip"
-                : "Sharing is unavailable in this browser";
 
               return (
                 <article
@@ -373,7 +368,9 @@ export function ClipsPane({
                       {isEditing ? (
                         <Input
                           value={draftTitle}
-                          onChange={(event) => setDraftTitle(event.target.value)}
+                          onChange={(event) =>
+                            setDraftTitle(event.target.value)
+                          }
                           onKeyDown={(event) => {
                             if (event.key === "Enter") {
                               renameClip(clip.id);
@@ -399,7 +396,9 @@ export function ClipsPane({
                             ? "danger"
                             : "warning"
                       }
-                      className={isProcessing ? "animate-glow-pulse" : undefined}
+                      className={
+                        isProcessing ? "animate-glow-pulse" : undefined
+                      }
                     >
                       {statusLabel}
                     </Badge>
@@ -445,17 +444,13 @@ export function ClipsPane({
                       )}
                     </Button>
                     <Button
-                      disabled={!isReady || isSharing || !isShareSupported}
-                      onClick={() => shareClip(clip)}
+                      disabled={!isReady}
+                      onClick={() => openShareComposer(clip)}
                       size="icon"
-                      title={shareTitle}
+                      title="Share clip"
                       variant="secondary"
                     >
-                      {isSharing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Share2 className="h-4 w-4" />
-                      )}
+                      <Share2 className="h-4 w-4" />
                     </Button>
                     <Button
                       disabled={!isReady}
@@ -537,7 +532,8 @@ export function ClipsPane({
                   {previewClip.title}
                 </h3>
                 <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
-                  {formatTime(previewClip.startTime)} – {formatTime(previewClip.endTime)}
+                  {formatTime(previewClip.startTime)} –{" "}
+                  {formatTime(previewClip.endTime)}
                 </p>
               </div>
               <Button
@@ -550,7 +546,11 @@ export function ClipsPane({
               </Button>
             </div>
             {previewClip.url ? (
-              <video className="w-full rounded-md" controls src={previewClip.url} />
+              <video
+                className="w-full rounded-md"
+                controls
+                src={previewClip.url}
+              />
             ) : null}
           </div>
         </div>
@@ -561,7 +561,7 @@ export function ClipsPane({
           className="fixed inset-0 z-50 grid animate-fade-in place-items-center bg-background/70 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          aria-label="Schedule clip"
+          aria-label={composerMode === "share" ? "Share clip" : "Schedule clip"}
           onClick={(event) => {
             if (event.target === event.currentTarget && !isScheduling) {
               setScheduleClip(null);
@@ -573,21 +573,32 @@ export function ClipsPane({
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary">
-                    <CalendarPlus className="h-3.5 w-3.5" />
-                    Schedule harvest
+                    {composerMode === "share" ? (
+                      <Share2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <CalendarPlus className="h-3.5 w-3.5" />
+                    )}
+                    {composerMode === "share"
+                      ? "Share harvest"
+                      : "Schedule harvest"}
                   </p>
                   <h3 className="truncate font-display text-lg font-bold tracking-tight">
                     {scheduleClip.title}
                   </h3>
                   <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
-                    {formatTime(scheduleClip.startTime)} – {formatTime(scheduleClip.endTime)}
+                    {formatTime(scheduleClip.startTime)} –{" "}
+                    {formatTime(scheduleClip.endTime)}
                   </p>
                 </div>
                 <Button
                   disabled={isScheduling}
                   onClick={() => setScheduleClip(null)}
                   size="icon"
-                  title="Close scheduler"
+                  title={
+                    composerMode === "share"
+                      ? "Close sharing"
+                      : "Close scheduler"
+                  }
                   variant="ghost"
                 >
                   <X className="h-4 w-4" />
@@ -637,7 +648,7 @@ export function ClipsPane({
               <div>
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                    Channels
+                    Platforms
                   </p>
                   {isLoadingSocials ? (
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -645,7 +656,9 @@ export function ClipsPane({
                 </div>
                 {(socialConnections[0]?.connectedPlatforms ?? []).length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {(socialConnections[0]?.connectedPlatforms ?? []).map((platform) => {
+                    {sortPlatforms(
+                      socialConnections[0]?.connectedPlatforms ?? [],
+                    ).map((platform) => {
                       const isSelected = selectedPlatforms.includes(platform);
                       return (
                         <button
@@ -669,9 +682,15 @@ export function ClipsPane({
                       No connected channels yet.
                     </p>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      Connect social accounts before scheduling posts.
+                      Connect TikTok, Instagram, YouTube, LinkedIn, or other
+                      accounts before sharing clips.
                     </p>
-                    <Button asChild className="mt-3" size="sm" variant="secondary">
+                    <Button
+                      asChild
+                      className="mt-3"
+                      size="sm"
+                      variant="secondary"
+                    >
                       <Link href="/account">Open Account</Link>
                     </Button>
                   </div>
@@ -737,7 +756,11 @@ export function ClipsPane({
                   ) : (
                     <CalendarPlus className="h-4 w-4" />
                   )}
-                  {isScheduling ? "Scheduling" : "Schedule Post"}
+                  {isScheduling
+                    ? "Scheduling"
+                    : composerMode === "share"
+                      ? "Schedule Share"
+                      : "Schedule Post"}
                 </Button>
               </div>
             </div>
