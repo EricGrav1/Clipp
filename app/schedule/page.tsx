@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { ScheduleBoard } from "@/components/social/schedule-board";
+import { CalendarPlus, Download, Sprout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BearFarmer } from "@/components/ui/mascot";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { requireUserAccount } from "@/lib/auth";
-import { hasActiveSubscription, refreshSubscriptionFromStripe } from "@/lib/billing";
-import { prisma } from "@/lib/prisma";
-import { toScheduledPostDTO } from "@/lib/social";
+import {
+  hasActiveSubscription,
+  refreshSubscriptionFromStripe,
+} from "@/lib/billing";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -18,20 +19,6 @@ export default async function SchedulePage() {
   if (!hasActiveSubscription(account)) {
     redirect("/pricing?required=subscription");
   }
-
-  const posts = await prisma.scheduledPost.findMany({
-    where: { userAccountId: account.id },
-    orderBy: { scheduledAt: "asc" },
-    include: {
-      clip: {
-        include: {
-          project: {
-            select: { name: true },
-          },
-        },
-      },
-    },
-  });
 
   return (
     <main className="min-h-screen px-5 py-6 sm:px-8">
@@ -56,7 +43,50 @@ export default async function SchedulePage() {
           </div>
         </div>
 
-        <ScheduleBoard initialPosts={posts.map(toScheduledPostDTO)} />
+        <section className="grid min-h-[520px] animate-fade-in place-items-center rounded-[1.5rem] border border-border bg-card p-6 shadow-panel">
+          <div className="max-w-2xl text-center">
+            <p className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-primary/12 px-3 py-1 font-mono text-xs uppercase tracking-[0.2em] text-primary">
+              <Sprout className="h-3.5 w-3.5" />
+              Future crop
+            </p>
+            <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+              Direct social publishing is parked for now.
+            </h1>
+            <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-muted-foreground">
+              Provider-backed scheduling is a profitability-phase feature. Today
+              Clip Farmer focuses on reliable harvesting, MP4 downloads, and a
+              manual posting workflow for TikTok, Instagram, YouTube, and
+              LinkedIn.
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-border bg-card-2 p-4 text-left">
+                <Download className="mb-3 h-5 w-5 text-primary" />
+                <h2 className="font-display text-lg font-bold">
+                  Use ready exports
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  Download each ripe clip from the harvest basket and upload it
+                  directly inside the social platform.
+                </p>
+              </div>
+              <div className="rounded-xl border border-border bg-card-2 p-4 text-left">
+                <CalendarPlus className="mb-3 h-5 w-5 text-primary" />
+                <h2 className="font-display text-lg font-bold">
+                  Revisit later
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  When the economics make sense, this page can become the social
+                  calendar and connected account manager.
+                </p>
+              </div>
+            </div>
+
+            <Button asChild className="mt-7" variant="primary">
+              <Link href="/app">Back to workspace</Link>
+            </Button>
+          </div>
+        </section>
       </div>
     </main>
   );

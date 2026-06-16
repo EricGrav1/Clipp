@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription } from "@/lib/billing";
-import { getSocialConnections, SOCIAL_PLATFORMS } from "@/lib/social";
+import { SOCIAL_PLATFORMS } from "@/lib/social";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,10 +12,10 @@ export async function GET() {
     const account = await requireUserAccount();
     requireActiveSubscription(account);
 
-    const connections = await getSocialConnections(account);
-
     return NextResponse.json({
-      connections,
+      connections: [],
+      message:
+        "Direct social publishing is parked until Clip Farmer is profitable.",
       platforms: SOCIAL_PLATFORMS,
     });
   } catch (error) {

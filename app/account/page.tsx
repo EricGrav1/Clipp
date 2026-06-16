@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { BillingPortalButton, CheckoutButton } from "@/components/billing-actions";
+import {
+  BillingPortalButton,
+  CheckoutButton,
+} from "@/components/billing-actions";
 import { SocialAccountsPanel } from "@/components/social/social-accounts-panel";
 import { Button } from "@/components/ui/button";
 import { requireUserAccount } from "@/lib/auth";
@@ -9,15 +12,15 @@ import {
   refreshSubscriptionFromStripe,
 } from "@/lib/billing";
 import { formatDuration } from "@/lib/format";
-import { getSocialConnections } from "@/lib/social";
 
 export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
-  const account = await refreshSubscriptionFromStripe(await requireUserAccount());
+  const account = await refreshSubscriptionFromStripe(
+    await requireUserAccount(),
+  );
   const hasSubscription = hasActiveSubscription(account);
   const remainingSeconds = getRemainingRenderSeconds(account);
-  const socialConnections = hasSubscription ? await getSocialConnections(account) : [];
 
   return (
     <main className="min-h-screen px-5 py-8 sm:px-8">
@@ -29,9 +32,6 @@ export default async function AccountPage() {
           <div className="flex items-center gap-2">
             <Button asChild variant="secondary">
               <Link href="/app">Dashboard</Link>
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href="/schedule">Schedule</Link>
             </Button>
           </div>
         </div>
@@ -80,9 +80,7 @@ export default async function AccountPage() {
           </div>
         </section>
 
-        {hasSubscription ? (
-          <SocialAccountsPanel initialConnections={socialConnections} />
-        ) : null}
+        {hasSubscription ? <SocialAccountsPanel /> : null}
       </div>
     </main>
   );

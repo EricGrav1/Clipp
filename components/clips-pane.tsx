@@ -2,8 +2,10 @@
 
 import {
   CalendarPlus,
+  Clipboard,
   Download,
   Eye,
+  ExternalLink,
   Loader2,
   Pencil,
   Save,
@@ -13,13 +15,11 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDuration, formatTime } from "@/lib/format";
-import type { SocialConnectionDTO, SocialPlatform } from "@/lib/social";
 
 export type ClipItem = {
   id: string;
@@ -32,30 +32,27 @@ export type ClipItem = {
   error: string | null;
 };
 
-const PLATFORM_LABELS: Record<SocialPlatform, string> = {
-  bluesky: "Bluesky",
-  facebook: "Facebook",
-  instagram: "Instagram",
-  linkedin: "LinkedIn",
-  pinterest: "Pinterest",
-  reddit: "Reddit",
-  threads: "Threads",
-  tiktok: "TikTok",
-  twitter: "X",
-  youtube: "YouTube",
-};
-
-const PLATFORM_ORDER: SocialPlatform[] = [
-  "tiktok",
-  "instagram",
-  "youtube",
-  "linkedin",
-  "facebook",
-  "twitter",
-  "threads",
-  "bluesky",
-  "pinterest",
-  "reddit",
+const MANUAL_SHARE_LINKS = [
+  {
+    label: "TikTok",
+    href: "https://www.tiktok.com/upload",
+    note: "Upload vertical clips",
+  },
+  {
+    label: "YouTube Shorts",
+    href: "https://studio.youtube.com",
+    note: "Create a Short",
+  },
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com",
+    note: "Post a Reel",
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/feed/",
+    note: "Share to your feed",
+  },
 ];
 
 export function ClipsPane({
@@ -69,139 +66,42 @@ export function ClipsPane({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [busyClipId, setBusyClipId] = useState<string | null>(null);
-  const [scheduleClip, setScheduleClip] = useState<ClipItem | null>(null);
-  const [composerMode, setComposerMode] = useState<"share" | "schedule">(
-    "schedule",
-  );
-  const [socialConnections, setSocialConnections] = useState<
-    SocialConnectionDTO[]
-  >([]);
-  const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>(
-    [],
-  );
+  const [shareClip, setShareClip] = useState<ClipItem | null>(null);
   const [sharedCaption, setSharedCaption] = useState("");
-  const [platformOverrides, setPlatformOverrides] = useState<
-    Record<string, string>
-  >({});
-  const [scheduledAt, setScheduledAt] = useState("");
-  const [timezone, setTimezone] = useState("UTC");
-  const [isLoadingSocials, setIsLoadingSocials] = useState(false);
-  const [isScheduling, setIsScheduling] = useState(false);
+  const [isCaptionCopied, setIsCaptionCopied] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
-  }, []);
-
-  function defaultScheduleTime() {
-    const nextDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    nextDate.setMinutes(0, 0, 0);
-    const offsetMs = nextDate.getTimezoneOffset() * 60 * 1000;
-    return new Date(nextDate.getTime() - offsetMs).toISOString().slice(0, 16);
-  }
-
-  function sortPlatforms(platforms: SocialPlatform[]) {
-    return [...platforms].sort(
-      (first, second) =>
-        PLATFORM_ORDER.indexOf(first) - PLATFORM_ORDER.indexOf(second),
-    );
-  }
-
-  function platformLabel(platform: SocialPlatform) {
-    return PLATFORM_LABELS[platform] ?? platform;
-  }
-
-  async function loadSocialAccounts() {
-    setIsLoadingSocials(true);
-
-    try {
-      const response = await fetch("/api/social/accounts");
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Could not load connected channels.");
-      }
-
-      const connections = (payload.connections ?? []) as SocialConnectionDTO[];
-      setSocialConnections(connections);
-      const platforms = sortPlatforms(connections[0]?.connectedPlatforms ?? []);
-      setSelectedPlatforms(platforms.slice(0, Math.min(platforms.length, 4)));
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Could not load connected channels.",
-      );
-    } finally {
-      setIsLoadingSocials(false);
-    }
-  }
-
-  function openComposer(clip: ClipItem, mode: "share" | "schedule") {
-    setError("");
-    setComposerMode(mode);
-    setScheduleClip(clip);
-    setSharedCaption(clip.title);
-    setPlatformOverrides({});
-    setScheduledAt(defaultScheduleTime());
-    loadSocialAccounts();
-  }
-
-  function openScheduleComposer(clip: ClipItem) {
-    openComposer(clip, "schedule");
-  }
-
   function openShareComposer(clip: ClipItem) {
-    openComposer(clip, "share");
+    setError("");
+    setShareClip(clip);
+    setSharedCaption(clip.title);
+    setIsCaptionCopied(false);
   }
 
-  function togglePlatform(platform: SocialPlatform) {
-    setSelectedPlatforms((existing) =>
-      existing.includes(platform)
-        ? existing.filter((item) => item !== platform)
-        : [...existing, platform],
-    );
-  }
-
-  async function schedulePost() {
-    if (!scheduleClip) {
+  async function copyCaption() {
+    if (!shareClip) {
       return;
     }
 
     setError("");
-    setIsScheduling(true);
 
     try {
-      const response = await fetch(
-        `/api/clips/${scheduleClip.id}/scheduled-posts`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            selectedPlatforms,
-            sharedCaption,
-            platformOverrides,
-            scheduledAt: new Date(scheduledAt).toISOString(),
-            timezone,
-          }),
-        },
+      await navigator.clipboard.writeText(
+        sharedCaption.trim() || shareClip.title,
       );
-      const payload = await response.json();
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Could not schedule clip.");
-      }
-
-      setScheduleClip(null);
-    } catch (caughtError) {
+      setIsCaptionCopied(true);
+    } catch {
       setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Could not schedule clip.",
+        "Could not copy the caption automatically. Select the caption text and copy it manually.",
       );
-    } finally {
-      setIsScheduling(false);
+      setIsCaptionCopied(false);
     }
+  }
+
+  function showDeferredScheduleMessage() {
+    setError(
+      "Direct social scheduling is planned for later. For now, download the clip and post it manually from the share panel.",
+    );
   }
 
   async function downloadClip(clip: ClipItem) {
@@ -454,9 +354,9 @@ export function ClipsPane({
                     </Button>
                     <Button
                       disabled={!isReady}
-                      onClick={() => openScheduleComposer(clip)}
+                      onClick={showDeferredScheduleMessage}
                       size="icon"
-                      title="Schedule clip"
+                      title="Direct scheduling is planned for later"
                       variant="secondary"
                     >
                       <CalendarPlus className="h-4 w-4" />
@@ -556,15 +456,15 @@ export function ClipsPane({
         </div>
       ) : null}
 
-      {scheduleClip ? (
+      {shareClip ? (
         <div
           className="fixed inset-0 z-50 grid animate-fade-in place-items-center bg-background/70 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          aria-label={composerMode === "share" ? "Share clip" : "Schedule clip"}
+          aria-label="Share clip"
           onClick={(event) => {
-            if (event.target === event.currentTarget && !isScheduling) {
-              setScheduleClip(null);
+            if (event.target === event.currentTarget) {
+              setShareClip(null);
             }
           }}
         >
@@ -573,47 +473,47 @@ export function ClipsPane({
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-primary">
-                    {composerMode === "share" ? (
-                      <Share2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <CalendarPlus className="h-3.5 w-3.5" />
-                    )}
-                    {composerMode === "share"
-                      ? "Share harvest"
-                      : "Schedule harvest"}
+                    <Share2 className="h-3.5 w-3.5" />
+                    Share harvest
                   </p>
                   <h3 className="truncate font-display text-lg font-bold tracking-tight">
-                    {scheduleClip.title}
+                    {shareClip.title}
                   </h3>
                   <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
-                    {formatTime(scheduleClip.startTime)} –{" "}
-                    {formatTime(scheduleClip.endTime)}
+                    {formatTime(shareClip.startTime)} –{" "}
+                    {formatTime(shareClip.endTime)}
                   </p>
                 </div>
                 <Button
-                  disabled={isScheduling}
-                  onClick={() => setScheduleClip(null)}
+                  onClick={() => setShareClip(null)}
                   size="icon"
-                  title={
-                    composerMode === "share"
-                      ? "Close sharing"
-                      : "Close scheduler"
-                  }
+                  title="Close sharing"
                   variant="ghost"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              {scheduleClip.url ? (
+              {shareClip.url ? (
                 <video
                   className="aspect-video w-full rounded-md object-contain"
                   controls
-                  src={scheduleClip.url}
+                  src={shareClip.url}
                 />
               ) : null}
             </div>
 
             <div className="space-y-4 p-4">
+              <div className="rounded-lg border border-warning/25 bg-warning/10 p-3">
+                <p className="text-sm font-bold text-foreground">
+                  Direct posting is coming later.
+                </p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  Ayrshare-style publishing is parked until Clip Farmer is
+                  profitable. For now, download the clip, copy the caption, and
+                  upload through the platform you want to use.
+                </p>
+              </div>
+
               <div>
                 <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                   Caption
@@ -623,109 +523,34 @@ export function ClipsPane({
                   maxLength={2200}
                   value={sharedCaption}
                   onChange={(event) => setSharedCaption(event.target.value)}
-                  placeholder="Write the post copy for every selected channel."
+                  placeholder="Write the caption you want to paste into the social platform."
                 />
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="grid gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                  Publish time
-                  <Input
-                    type="datetime-local"
-                    value={scheduledAt}
-                    onChange={(event) => setScheduledAt(event.target.value)}
-                  />
-                </label>
-                <label className="grid gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                  Timezone
-                  <Input
-                    value={timezone}
-                    onChange={(event) => setTimezone(event.target.value)}
-                  />
-                </label>
-              </div>
-
               <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                    Platforms
-                  </p>
-                  {isLoadingSocials ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  ) : null}
-                </div>
-                {(socialConnections[0]?.connectedPlatforms ?? []).length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {sortPlatforms(
-                      socialConnections[0]?.connectedPlatforms ?? [],
-                    ).map((platform) => {
-                      const isSelected = selectedPlatforms.includes(platform);
-                      return (
-                        <button
-                          key={platform}
-                          type="button"
-                          onClick={() => togglePlatform(platform)}
-                          className={`h-9 rounded-full border px-3 text-xs font-bold transition ${
-                            isSelected
-                              ? "border-primary bg-primary text-primary-foreground shadow-soft"
-                              : "border-border bg-card-2 text-muted-foreground hover:border-primary/50"
-                          }`}
-                        >
-                          {platformLabel(platform)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-border bg-card-2 p-4">
-                    <p className="text-sm font-semibold text-foreground">
-                      No connected channels yet.
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      Connect TikTok, Instagram, YouTube, LinkedIn, or other
-                      accounts before sharing clips.
-                    </p>
-                    <Button
-                      asChild
-                      className="mt-3"
-                      size="sm"
-                      variant="secondary"
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                  Open a platform
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {MANUAL_SHARE_LINKS.map((platform) => (
+                    <a
+                      key={platform.href}
+                      href={platform.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg border border-border bg-card-2 p-3 transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-soft"
                     >
-                      <Link href="/account">Open Account</Link>
-                    </Button>
-                  </div>
-                )}
+                      <span className="flex items-center justify-between gap-3 font-display text-base font-bold text-foreground">
+                        {platform.label}
+                        <ExternalLink className="h-4 w-4 text-primary" />
+                      </span>
+                      <span className="mt-1 block text-xs font-semibold text-muted-foreground">
+                        {platform.note}
+                      </span>
+                    </a>
+                  ))}
+                </div>
               </div>
-
-              {selectedPlatforms.length > 0 ? (
-                <details className="rounded-lg border border-border bg-card-2 p-3">
-                  <summary className="cursor-pointer text-sm font-bold text-foreground">
-                    Per-channel overrides
-                  </summary>
-                  <div className="mt-3 space-y-3">
-                    {selectedPlatforms.map((platform) => (
-                      <label
-                        key={platform}
-                        className="grid gap-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground"
-                      >
-                        {platformLabel(platform)}
-                        <textarea
-                          className="min-h-20 w-full resize-y rounded-lg border border-border bg-input px-3 py-2 text-sm normal-case leading-6 tracking-normal text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                          maxLength={2200}
-                          value={platformOverrides[platform] ?? ""}
-                          onChange={(event) =>
-                            setPlatformOverrides((existing) => ({
-                              ...existing,
-                              [platform]: event.target.value,
-                            }))
-                          }
-                          placeholder="Leave blank to use the shared caption."
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
 
               {error ? (
                 <p className="rounded-lg border border-destructive/35 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive">
@@ -734,33 +559,24 @@ export function ClipsPane({
               ) : null}
 
               <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
-                <Button
-                  disabled={isScheduling}
-                  onClick={() => setScheduleClip(null)}
-                  variant="secondary"
-                >
+                <Button onClick={() => setShareClip(null)} variant="secondary">
                   Cancel
                 </Button>
+                <Button onClick={copyCaption} variant="secondary">
+                  <Clipboard className="h-4 w-4" />
+                  {isCaptionCopied ? "Copied" : "Copy caption"}
+                </Button>
                 <Button
-                  disabled={
-                    isScheduling ||
-                    selectedPlatforms.length === 0 ||
-                    !sharedCaption.trim() ||
-                    !scheduledAt
-                  }
-                  onClick={schedulePost}
+                  disabled={busyClipId === shareClip.id}
+                  onClick={() => downloadClip(shareClip)}
                   variant="primary"
                 >
-                  {isScheduling ? (
+                  {busyClipId === shareClip.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <CalendarPlus className="h-4 w-4" />
+                    <Download className="h-4 w-4" />
                   )}
-                  {isScheduling
-                    ? "Scheduling"
-                    : composerMode === "share"
-                      ? "Schedule Share"
-                      : "Schedule Post"}
+                  Download clip
                 </Button>
               </div>
             </div>

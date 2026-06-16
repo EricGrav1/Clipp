@@ -5,9 +5,9 @@ import {
   Check,
   Clock3,
   CloudUpload,
+  Download,
   Play,
   Scissors,
-  Send,
   Share2,
   Sprout,
   TrendingUp,
@@ -36,8 +36,8 @@ const steps = [
   },
   {
     icon: Share2,
-    title: "Schedule",
-    text: "Download, share, or queue clips for connected social channels.",
+    title: "Post",
+    text: "Download the clip, copy your caption, and upload it anywhere.",
   },
 ];
 
@@ -62,11 +62,17 @@ const benefits = [
   {
     icon: CalendarClock,
     title: "Stay consistent",
-    text: "Schedule harvested clips into a simple publishing queue for your platforms and automate your growth!",
+    text: "Keep a simple publishing rhythm with repeatable exports and captions.",
   },
 ];
 
-const proof = ["Podcast hosts", "Coaches", "Course creators", "Streamers", "Solo founders"];
+const proof = [
+  "Podcast hosts",
+  "Coaches",
+  "Course creators",
+  "Streamers",
+  "Solo founders",
+];
 
 export default function LandingPage() {
   const isClerkEnabled = isClerkPublishableKey(
@@ -86,7 +92,7 @@ export default function LandingPage() {
           <nav className="hidden items-center gap-7 text-sm font-extrabold text-foreground/80 lg:flex">
             <a href="#features">Features</a>
             <a href="#how">How it works</a>
-            <a href="#scheduler">Scheduler</a>
+            <a href="#posting">Posting</a>
             <a href="#pricing">Pricing</a>
             <a href="#examples">Examples</a>
           </nav>
@@ -115,7 +121,7 @@ export default function LandingPage() {
               <span className="block text-accent">your best clips</span>
             </h1>
             <p className="mt-6 max-w-2xl text-xl leading-8 text-foreground/78">
-              Find, cut, and schedule the most engaging moments from long-form
+              Find, cut, and export the most engaging moments from long-form
               recordings without dragging a timeline around all afternoon.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -130,14 +136,16 @@ export default function LandingPage() {
               </Button>
             </div>
             <div className="mt-7 grid max-w-xl gap-3 text-sm font-bold text-muted-foreground sm:grid-cols-3">
-              {["No complex editor", "Social scheduler", "Works in minutes"].map(
-                (item) => (
-                  <div key={item} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-primary" />
-                    {item}
-                  </div>
-                ),
-              )}
+              {[
+                "No complex editor",
+                "Post-ready exports",
+                "Works in minutes",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary" />
+                  {item}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -156,7 +164,10 @@ export default function LandingPage() {
               const Icon = step.icon;
 
               return (
-                <div key={step.title} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+                <div
+                  key={step.title}
+                  className="rounded-2xl border border-border bg-card p-4 shadow-soft"
+                >
                   <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft text-primary">
                     <Icon className="h-7 w-7" />
                   </div>
@@ -215,32 +226,34 @@ export default function LandingPage() {
       </section>
 
       <section
-        id="scheduler"
+        id="posting"
         className="border-b border-border bg-[linear-gradient(180deg,hsl(var(--card)/0.42),transparent)]"
       >
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/12 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary">
               <CalendarClock className="h-3.5 w-3.5" />
-              Social scheduling
+              Post-ready exports
             </p>
             <h2 className="font-display text-4xl font-extrabold leading-tight tracking-tight text-foreground sm:text-5xl">
-              Turn the harvest into a posting calendar.
+              Download once. Post anywhere.
             </h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
-              Clip Farmer is moving beyond exports. Connect your social accounts,
-              choose a ready clip, write one caption with channel-specific tweaks,
-              and queue it for the best time to post.
+              Direct platform publishing is planned for later. Today, Clip
+              Farmer gives you a ready clip, a caption workspace, and quick
+              links so you can post manually without losing momentum.
             </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              {["Connected channels", "Caption overrides", "Upcoming queue"].map(
+              {["MP4 exports", "Copy-ready captions", "Platform links"].map(
                 (item) => (
                   <div
                     key={item}
                     className="rounded-xl border border-border bg-card p-4 shadow-soft"
                   >
                     <Check className="mb-2 h-4 w-4 text-primary" />
-                    <p className="text-sm font-extrabold text-foreground">{item}</p>
+                    <p className="text-sm font-extrabold text-foreground">
+                      {item}
+                    </p>
                   </div>
                 ),
               )}
@@ -254,19 +267,19 @@ export default function LandingPage() {
                   Posting row
                 </p>
                 <h3 className="font-display text-2xl font-extrabold">
-                  Next clips to publish
+                  Clips ready to post
                 </h3>
               </div>
               <span className="rounded-full border border-primary/35 bg-primary/10 px-3 py-1 text-xs font-extrabold text-primary">
-                3 queued
+                3 ready
               </span>
             </div>
 
             <div className="space-y-3">
               {[
-                ["Perfect Hook", "TikTok, Instagram", "Today · 6:30 PM"],
-                ["Big Insight", "YouTube Shorts", "Tomorrow · 9:00 AM"],
-                ["Build once", "LinkedIn, X", "Friday · 12:15 PM"],
+                ["Perfect Hook", "TikTok upload", "Copy caption"],
+                ["Big Insight", "YouTube Shorts", "Download MP4"],
+                ["Build once", "LinkedIn post", "Open platform"],
               ].map(([title, channels, time], index) => (
                 <div
                   key={title}
@@ -282,12 +295,13 @@ export default function LandingPage() {
                     <p className="text-sm text-muted-foreground">{channels}</p>
                   </div>
                   <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground sm:justify-end">
-                    <CalendarClock className="h-4 w-4 text-primary" />
+                    <Download className="h-4 w-4 text-primary" />
                     {time}
                   </div>
                   {index === 0 ? (
                     <div className="sm:col-span-3 rounded-lg border border-border bg-card px-3 py-2 text-sm leading-6 text-muted-foreground">
-                      “This one idea changed how I think about consistent content.”
+                      “This one idea changed how I think about consistent
+                      content.”
                     </div>
                   ) : null}
                 </div>
@@ -296,12 +310,13 @@ export default function LandingPage() {
 
             <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-semibold text-muted-foreground">
-                Built for solo creators and small teams managing every post themselves.
+                Built for solo creators who want the clip ready before they open
+                the social app.
               </p>
               <Button asChild variant="primary">
                 <Link href="/app">
-                  Start scheduling
-                  <Send className="h-4 w-4" />
+                  Start clipping
+                  <Download className="h-4 w-4" />
                 </Link>
               </Button>
             </div>
@@ -352,11 +367,15 @@ export default function LandingPage() {
             </div>
           </div>
           <p className="mt-4 text-xs leading-5 text-muted-foreground">
-            Have a promo code? Enter it during Stripe checkout before subscribing.
+            Have a promo code? Enter it during Stripe checkout before
+            subscribing.
           </p>
         </div>
 
-        <div id="features" className="rounded-[1.5rem] border border-border bg-card p-6 shadow-soft">
+        <div
+          id="features"
+          className="rounded-[1.5rem] border border-border bg-card p-6 shadow-soft"
+        >
           <h2 className="font-display text-3xl font-extrabold">
             Why creators love Clip Farmer
           </h2>
