@@ -12,8 +12,7 @@ export async function POST() {
 
     return NextResponse.json(
       {
-        error:
-          "Direct social publishing is parked until Clip Farmer is profitable.",
+        error: "Social publishing is coming in a few harvests.",
       },
       { status: 501 },
     );

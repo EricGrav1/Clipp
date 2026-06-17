@@ -50,13 +50,12 @@ export default async function SchedulePage() {
               Future crop
             </p>
             <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
-              Direct social publishing is parked for now.
+              Social publishing is coming in a few harvests.
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-muted-foreground">
-              Provider-backed scheduling is a profitability-phase feature. Today
-              Clip Farmer focuses on reliable harvesting, MP4 downloads, and a
-              manual posting workflow for TikTok, Instagram, YouTube, and
-              LinkedIn.
+              The connected channel row is still growing. Today Clip Farmer
+              focuses on reliable harvesting, MP4 downloads, and a manual
+              posting workflow for TikTok, Instagram, YouTube, and LinkedIn.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -76,7 +75,7 @@ export default async function SchedulePage() {
                   Revisit later
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  When the economics make sense, this page can become the social
+                  When the crop is ready, this page can become the social
                   calendar and connected account manager.
                 </p>
               </div>

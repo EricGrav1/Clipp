@@ -12,7 +12,7 @@ export async function POST() {
     return NextResponse.json(
       {
         error:
-          "Direct social scheduling is parked until Clip Farmer is profitable. Download the clip and post it manually for now.",
+          "Social scheduling is coming in a few harvests. Download the clip and post it manually for now.",
       },
       { status: 501 },
     );

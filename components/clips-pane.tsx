@@ -505,12 +505,12 @@ export function ClipsPane({
             <div className="space-y-4 p-4">
               <div className="rounded-lg border border-warning/25 bg-warning/10 p-3">
                 <p className="text-sm font-bold text-foreground">
-                  Direct posting is coming later.
+                  Posting is coming in a few harvests.
                 </p>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Ayrshare-style publishing is parked until Clip Farmer is
-                  profitable. For now, download the clip, copy the caption, and
-                  upload through the platform you want to use.
+                  The full planting row for TikTok, Instagram, YouTube Shorts,
+                  and LinkedIn is still growing. For now, download the clip,
+                  copy the caption, and post it in the field you want to reach.
                 </p>
               </div>
 

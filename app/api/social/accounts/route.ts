@@ -14,8 +14,7 @@ export async function GET() {
 
     return NextResponse.json({
       connections: [],
-      message:
-        "Direct social publishing is parked until Clip Farmer is profitable.",
+      message: "Social publishing is coming in a few harvests.",
       platforms: SOCIAL_PLATFORMS,
     });
   } catch (error) {

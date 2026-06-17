@@ -16,12 +16,12 @@ export function SocialAccountsPanel() {
             Social rows
           </p>
           <h2 className="font-display text-3xl font-extrabold tracking-tight">
-            Direct publishing is parked for now
+            Social rows are coming in a few harvests
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-            Ayrshare pricing does not make sense at this stage, so Clip Farmer
-            is focused on reliable clipping, downloads, and manual posting until
-            the product is profitable.
+            Clip Farmer is focused on reliable harvesting, downloads, and a
+            simple manual posting flow while the connected channel row keeps
+            growing.
           </p>
         </div>
         <Badge tone="warning">planned</Badge>
@@ -69,7 +69,7 @@ export function SocialAccountsPanel() {
             ))}
           </div>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            When direct publishing returns, this is where channel authorization,
+            When this crop is ready, this is where channel authorization,
             scheduling, and publishing status will live.
           </p>
           <Button asChild className="mt-3" size="sm" variant="secondary">
