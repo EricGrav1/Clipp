@@ -104,60 +104,66 @@ function probeSourceCodecs(ffprobeBinary: string, inputPath: string) {
     const ffprobe = spawn(ffprobeBinary, [
       "-v",
       "error",
-      "-select_streams",
-      "v:0",
       "-show_entries",
-      "stream=codec_name",
+      "stream=codec_type,codec_name",
       "-of",
-      "default=noprint_wrappers=1:nokey=1",
+      "json",
       inputPath,
     ]);
 
-    let videoCodec = "";
-    let videoError = "";
+    let output = "";
+    let probeError = "";
 
     ffprobe.stdout.on("data", (chunk) => {
-      videoCodec += chunk.toString();
+      output += chunk.toString();
     });
     ffprobe.stderr.on("data", (chunk) => {
-      videoError += chunk.toString();
+      probeError += chunk.toString();
     });
     ffprobe.on("error", reject);
     ffprobe.on("close", (code) => {
       if (code !== 0) {
-        reject(new Error(videoError.trim() || `ffprobe exited with code ${code}.`));
+        reject(new Error(probeError.trim() || `ffprobe exited with code ${code}.`));
         return;
       }
 
-      const audioProbe = spawn(ffprobeBinary, [
-        "-v",
-        "error",
-        "-select_streams",
-        "a:0",
-        "-show_entries",
-        "stream=codec_name",
-        "-of",
-        "default=noprint_wrappers=1:nokey=1",
-        inputPath,
-      ]);
+      try {
+        const payload = JSON.parse(output) as {
+          streams?: Array<{ codec_name?: string; codec_type?: string }>;
+        };
+        const streams = payload.streams ?? [];
 
-      let audioCodec = "";
-      audioProbe.stdout.on("data", (chunk) => {
-        audioCodec += chunk.toString();
-      });
-      audioProbe.on("error", reject);
-      audioProbe.on("close", () => {
         resolve({
-          audioCodec: audioCodec.trim().split("\n")[0] || null,
-          videoCodec: videoCodec.trim().split("\n")[0] || null,
+          audioCodec:
+            streams.find((stream) => stream.codec_type === "audio")?.codec_name ??
+            null,
+          videoCodec:
+            streams.find((stream) => stream.codec_type === "video")?.codec_name ??
+            null,
         });
-      });
+      } catch (error) {
+        reject(
+          error instanceof Error
+            ? error
+            : new Error("Could not parse ffprobe codec output."),
+        );
+      }
     });
   });
 }
 
 function canStreamCopyForBrowserPreview(codecs: SourceCodecs) {
   return codecs.videoCodec === "h264" && (!codecs.audioCodec || codecs.audioCodec === "aac");
+}
+
+function transcodeThreadCount() {
+  const configuredThreads = Number(process.env.FFMPEG_THREADS);
+
+  if (Number.isInteger(configuredThreads) && configuredThreads >= 0) {
+    return String(configuredThreads);
+  }
+
+  return "0";
 }
 
 function fastCopyArgs(input: RenderClipInput) {
@@ -191,7 +197,7 @@ function transcodeArgs(input: RenderClipInput) {
     "-bufsize",
     "12M",
     "-threads",
-    "1",
+    transcodeThreadCount(),
     "-c:a",
     "aac",
     "-b:a",

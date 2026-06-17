@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { processRenderJob } from "../lib/render-jobs";
 
-const pollMs = Number(process.env.RENDER_WORKER_POLL_MS ?? 3_000);
+const pollMs = Number(process.env.RENDER_WORKER_POLL_MS ?? 1_000);
 const staleAfterMs = Number(process.env.RENDER_WORKER_STALE_AFTER_MS ?? 10 * 60 * 1_000);
 let isShuttingDown = false;
 

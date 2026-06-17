@@ -32,9 +32,10 @@ type EditorProject = {
   clips: ClipItem[];
 };
 
-const DURATIONS = [30, 45, 60] as const;
+const DURATIONS = [15, 30, 45, 60] as const;
 const MULTIPART_UPLOAD_CONCURRENCY = 3;
 const MULTIPART_UPLOAD_RETRIES = 3;
+const PROCESSING_CLIP_POLL_MS = 1_000;
 
 type DirectUpload = {
   mode: "single";
@@ -298,7 +299,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
 
     const intervalId = window.setInterval(() => {
       void refreshClips().catch(() => undefined);
-    }, 3_000);
+    }, PROCESSING_CLIP_POLL_MS);
 
     return () => window.clearInterval(intervalId);
   }, [clips, refreshClips]);
@@ -623,7 +624,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
 
               <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <div className="grid grid-cols-3 gap-2 sm:flex">
+                  <div className="grid grid-cols-4 gap-2 sm:flex">
                     {DURATIONS.map((duration) => {
                       const safeDuration = videoDuration
                         ? Math.min(duration, videoDuration)
