@@ -61,8 +61,34 @@ function mediaUrl(objectKey: string, localUrl: string) {
   return getR2Client() ? `/api/media/${objectKey}` : localUrl;
 }
 
-export function getStoredMediaUrl(objectKey: string | null | undefined, localUrl: string) {
+function mediaDownloadUrl(objectKey: string, localUrl: string) {
+  return getR2Client() ? `/api/media/${objectKey}?download=1` : localUrl;
+}
+
+function attachmentContentDisposition(fileName: string) {
+  const safeFileName = fileName
+    .replace(/[\u0000-\u001f\u007f"\\]/g, "")
+    .trim();
+  const fallbackFileName =
+    safeFileName.replace(/[^\x20-\x7E]/g, "_") || "download";
+
+  return `attachment; filename="${fallbackFileName}"; filename*=UTF-8''${encodeURIComponent(
+    safeFileName || fallbackFileName,
+  )}`;
+}
+
+export function getStoredMediaUrl(
+  objectKey: string | null | undefined,
+  localUrl: string,
+) {
   return objectKey ? mediaUrl(objectKey, localUrl) : localUrl;
+}
+
+export function getStoredMediaDownloadUrl(
+  objectKey: string | null | undefined,
+  localUrl: string,
+) {
+  return objectKey ? mediaDownloadUrl(objectKey, localUrl) : localUrl;
 }
 
 export async function createDirectVideoUpload(
@@ -281,7 +307,10 @@ export async function deleteStoredMedia(input: {
   );
 }
 
-export async function getSignedMediaUrl(objectKey: string) {
+export async function getSignedMediaUrl(
+  objectKey: string,
+  options: { downloadFileName?: string } = {},
+) {
   const client = getR2Client();
 
   if (!client) {
@@ -293,23 +322,11 @@ export async function getSignedMediaUrl(objectKey: string) {
     new GetObjectCommand({
       Bucket: process.env.R2_BUCKET,
       Key: objectKey,
+      ResponseContentDisposition: options.downloadFileName
+        ? attachmentContentDisposition(options.downloadFileName)
+        : undefined,
     }),
     { expiresIn: 60 * 10 },
-  );
-}
-
-export async function getStoredMediaObject(objectKey: string) {
-  const client = getR2Client();
-
-  if (!client) {
-    return null;
-  }
-
-  return client.send(
-    new GetObjectCommand({
-      Bucket: process.env.R2_BUCKET,
-      Key: objectKey,
-    }),
   );
 }
 

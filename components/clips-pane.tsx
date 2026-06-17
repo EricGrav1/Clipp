@@ -29,6 +29,7 @@ export type ClipItem = {
   duration: number;
   status: string;
   url: string | null;
+  downloadUrl: string | null;
   error: string | null;
 };
 
@@ -54,6 +55,33 @@ const MANUAL_SHARE_LINKS = [
     note: "Share to your feed",
   },
 ];
+
+function toDownloadFileName(title: string) {
+  const safeTitle =
+    title.replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "") || "clip";
+
+  return `${safeTitle}.mp4`;
+}
+
+function toDownloadHref(clip: ClipItem) {
+  const downloadUrl =
+    clip.downloadUrl ??
+    (clip.url?.startsWith("/api/media/") ? `${clip.url}?download=1` : clip.url);
+
+  if (!downloadUrl) {
+    return "#";
+  }
+
+  if (!downloadUrl.startsWith("/api/media/")) {
+    return downloadUrl;
+  }
+
+  const separator = downloadUrl.includes("?") ? "&" : "?";
+
+  return `${downloadUrl}${separator}filename=${encodeURIComponent(
+    toDownloadFileName(clip.title),
+  )}`;
+}
 
 export function ClipsPane({
   clips,
@@ -102,46 +130,6 @@ export function ClipsPane({
     setError(
       "Post scheduling is coming in a few harvests. For now, download the clip and post it manually from the share panel.",
     );
-  }
-
-  async function downloadClip(clip: ClipItem) {
-    setError("");
-
-    if (!clip.url) {
-      setError("This clip is not ready to download yet.");
-      return;
-    }
-
-    setBusyClipId(clip.id);
-
-    try {
-      const downloadUrl = clip.url.startsWith("/api/media/")
-        ? `${clip.url}?download=1`
-        : clip.url;
-      const response = await fetch(downloadUrl);
-
-      if (!response.ok) {
-        throw new Error("Could not download the clip.");
-      }
-
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = objectUrl;
-      anchor.download = `${clip.title.replace(/[^\w.-]+/g, "-") || "clip"}.mp4`;
-      document.body.append(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(objectUrl);
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Could not download clip.",
-      );
-    } finally {
-      setBusyClipId(null);
-    }
   }
 
   async function renameClip(clipId: string) {
@@ -330,19 +318,31 @@ export function ClipsPane({
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button
-                      disabled={!isReady || isBusy}
-                      onClick={() => downloadClip(clip)}
-                      size="icon"
-                      title="Download clip"
-                      variant="secondary"
-                    >
-                      {isBusy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
+                    {isReady ? (
+                      <Button
+                        asChild
+                        size="icon"
+                        title="Download clip"
+                        variant="secondary"
+                      >
+                        <a
+                          download={toDownloadFileName(clip.title)}
+                          href={toDownloadHref(clip)}
+                          onClick={() => setError("")}
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button
+                        disabled
+                        size="icon"
+                        title="Download clip"
+                        variant="secondary"
+                      >
                         <Download className="h-4 w-4" />
-                      )}
-                    </Button>
+                      </Button>
+                    )}
                     <Button
                       disabled={!isReady}
                       onClick={() => openShareComposer(clip)}
@@ -566,17 +566,15 @@ export function ClipsPane({
                   <Clipboard className="h-4 w-4" />
                   {isCaptionCopied ? "Copied" : "Copy caption"}
                 </Button>
-                <Button
-                  disabled={busyClipId === shareClip.id}
-                  onClick={() => downloadClip(shareClip)}
-                  variant="primary"
-                >
-                  {busyClipId === shareClip.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
+                <Button asChild variant="primary">
+                  <a
+                    download={toDownloadFileName(shareClip.title)}
+                    href={toDownloadHref(shareClip)}
+                    onClick={() => setError("")}
+                  >
                     <Download className="h-4 w-4" />
-                  )}
-                  Download clip
+                    Download clip
+                  </a>
                 </Button>
               </div>
             </div>
