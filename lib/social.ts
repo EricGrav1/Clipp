@@ -213,7 +213,7 @@ async function ensureAyrshareConnection(account: UserAccount) {
     body: stringify({
       title: account.email ?? `Clip Farmer ${account.id}`,
       topHeader: "Connect Clip Farmer to your social accounts",
-      subHeader: "Choose the channels you want Clip Farmer to schedule clips to.",
+      subHeader: "Choose the channels you want Clip Farmer to plant clips in.",
     }),
   });
 
@@ -442,7 +442,7 @@ export function toProviderMediaUrl(clip: Pick<Clip, "url">) {
 
   if (isSocialProviderConfigured()) {
     throw new ValidationError(
-      "Social scheduling needs an HTTPS clip URL. Configure R2_PUBLIC_BASE_URL or NEXT_PUBLIC_APP_URL with a public HTTPS host.",
+      "The social planting row needs an HTTPS clip URL. Configure R2_PUBLIC_BASE_URL or NEXT_PUBLIC_APP_URL with a public HTTPS host.",
       400,
     );
   }

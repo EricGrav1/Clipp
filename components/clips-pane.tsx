@@ -100,7 +100,7 @@ export function ClipsPane({
 
   function showDeferredScheduleMessage() {
     setError(
-      "Direct social scheduling is planned for later. For now, download the clip and post it manually from the share panel.",
+      "Post scheduling is coming in a few harvests. For now, download the clip and post it manually from the share panel.",
     );
   }
 
@@ -356,7 +356,7 @@ export function ClipsPane({
                       disabled={!isReady}
                       onClick={showDeferredScheduleMessage}
                       size="icon"
-                      title="Direct scheduling is planned for later"
+                      title="Post scheduling is coming in a few harvests"
                       variant="secondary"
                     >
                       <CalendarPlus className="h-4 w-4" />

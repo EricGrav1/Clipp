@@ -214,8 +214,8 @@ export function ScheduleBoard({
             Schedule the harvest.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
-            Track every clip queued for social, catch failed provider submissions,
-            and keep the publishing row moving.
+            The full posting row is still growing. Soon this field will hold
+            your queued clips, platform timing, and publishing status.
           </p>
         </div>
         <div className="flex gap-2">
@@ -248,11 +248,11 @@ export function ScheduleBoard({
           <div className="max-w-md">
             <CalendarClock className="mx-auto mb-4 h-10 w-10 text-primary/70" />
             <h2 className="font-display text-2xl font-bold tracking-tight">
-              No clips scheduled yet
+              No clips planted in the calendar yet
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Open a project, harvest a ready clip, then use its schedule button
-              to queue the first post.
+              Post scheduling is coming in a few harvests. For now, harvest a
+              ready clip, copy the caption, and post it manually.
             </p>
           </div>
         </section>
@@ -266,7 +266,7 @@ export function ScheduleBoard({
               grouped.upcoming.map(renderPost)
             ) : (
               <p className="rounded-xl border border-dashed border-border bg-card/50 p-4 text-sm text-muted-foreground">
-                No upcoming posts.
+                No upcoming posts planted yet.
               </p>
             )}
           </section>
@@ -279,7 +279,7 @@ export function ScheduleBoard({
                 grouped.attention.map(renderPost)
               ) : (
                 <p className="rounded-xl border border-dashed border-border bg-card/50 p-4 text-sm text-muted-foreground">
-                  No failed posts.
+                  No wilted posts.
                 </p>
               )}
             </section>

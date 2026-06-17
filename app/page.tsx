@@ -239,9 +239,9 @@ export default function LandingPage() {
               Download once. Post anywhere.
             </h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
-              Direct platform publishing is planned for later. Today, Clip
-              Farmer gives you a ready clip, a caption workspace, and quick
-              links so you can post manually without losing momentum.
+              Post scheduling is coming in a few harvests. Today, Clip Farmer
+              gives you a ready clip, a caption workspace, and quick links so
+              you can post manually without losing momentum.
             </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {["MP4 exports", "Copy-ready captions", "Platform links"].map(
