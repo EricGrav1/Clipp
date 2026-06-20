@@ -163,11 +163,14 @@ function canStreamCopyForBrowserPreview(codecs: SourceCodecs) {
 function transcodeThreadCount() {
   const configuredThreads = Number(process.env.FFMPEG_THREADS);
 
-  if (Number.isInteger(configuredThreads) && configuredThreads >= 0) {
+  if (Number.isInteger(configuredThreads) && configuredThreads > 0) {
     return String(configuredThreads);
   }
 
-  return "0";
+  // Railway may terminate memory-heavy 4K HEVC renders when FFmpeg uses every
+  // available decoder, filter, and encoder thread. Operators can raise this
+  // explicitly after sizing the worker for it.
+  return "1";
 }
 
 function escapeDrawtextText(value: string) {
@@ -248,10 +251,16 @@ function baseClipArgs({
   startTime,
   duration,
 }: RenderClipInput) {
+  const threads = transcodeThreadCount();
+
   return [
     "-hide_banner",
     "-nostdin",
     "-y",
+    "-threads",
+    threads,
+    "-filter_threads",
+    threads,
     "-ss",
     startTime.toFixed(3),
     "-i",
