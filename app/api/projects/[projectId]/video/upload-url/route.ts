@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription } from "@/lib/billing";
+import { getAccountEntitlements } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 import { createDirectVideoUpload } from "@/lib/storage";
 import { assertVideoMetadata, ValidationError } from "@/lib/validation";
@@ -27,8 +28,10 @@ export async function POST(
     }
 
     const body = await request.json().catch(() => ({}));
+    const entitlements = getAccountEntitlements(account);
     const metadata = assertVideoMetadata({
       fileName: body.fileName,
+      maxSizeBytes: entitlements.maxDirectVideoBytes,
       mimeType: body.mimeType,
       sizeBytes: body.sizeBytes,
     });

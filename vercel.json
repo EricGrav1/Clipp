@@ -1,3 +1,9 @@
 {
-  "buildCommand": "npm run vercel-build"
+  "buildCommand": "npm run vercel-build",
+  "crons": [
+    {
+      "path": "/api/internal/media-cleanup",
+      "schedule": "0 * * * *"
+    }
+  ]
 }

@@ -15,7 +15,7 @@ type ProjectCard = {
   name: string;
   createdAt: Date;
   updatedAt: Date;
-  video: { originalName: string; url: string } | null;
+  video: { originalName: string; url: string | null } | null;
   _count: { clips: number };
 };
 
@@ -167,7 +167,7 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
                     </p>
                   </div>
                   <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border bg-brand-soft transition group-hover:border-primary/50">
-                    {project.video ? (
+                    {project.video?.url ? (
                       <Film className="h-5 w-5 text-primary" />
                     ) : (
                       <Tractor className="h-5 w-5 text-muted-foreground" />
@@ -175,8 +175,12 @@ export function ProjectHome({ projects }: { projects: ProjectCard[] }) {
                   </div>
                 </div>
                 <div className="mt-5 flex items-center justify-between border-t border-border pt-3">
-                  <Badge tone={project.video ? "success" : "neutral"}>
-                    {project.video ? "Growing" : "Fallow"}
+                  <Badge tone={project.video?.url ? "success" : "neutral"}>
+                    {project.video?.url
+                      ? "Growing"
+                      : project.video
+                        ? "Expired"
+                        : "Fallow"}
                   </Badge>
                   <span className="text-sm font-semibold text-muted-foreground">
                     {project._count.clips}{" "}

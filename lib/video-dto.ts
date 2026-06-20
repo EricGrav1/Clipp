@@ -1,15 +1,20 @@
 import type { Video } from "@prisma/client";
+import { isTemporaryMediaUnavailable } from "@/lib/media-retention";
 
 export function toVideoDTO(video: Video | null) {
   if (!video) {
     return null;
   }
 
+  const isUnavailable = isTemporaryMediaUnavailable(video);
+
   return {
     durationSeconds: video.durationSeconds,
     id: video.id,
+    mediaDeletedAt: video.mediaDeletedAt,
+    mediaExpiresAt: video.mediaExpiresAt,
     originalName: video.originalName,
-    url: video.url,
+    url: isUnavailable ? null : video.url,
   };
 }
 
@@ -29,8 +34,12 @@ export function toProjectCardDTO<T extends {
     updatedAt: project.updatedAt,
     video: project.video
       ? {
+          mediaDeletedAt: project.video.mediaDeletedAt,
+          mediaExpiresAt: project.video.mediaExpiresAt,
           originalName: project.video.originalName,
-          url: project.video.url,
+          url: isTemporaryMediaUnavailable(project.video)
+            ? null
+            : project.video.url,
         }
       : null,
   };

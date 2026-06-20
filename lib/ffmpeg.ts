@@ -8,6 +8,10 @@ type RenderClipInput = {
   outputPath: string;
   startTime: number;
   duration: number;
+  watermark?: {
+    enabled: boolean;
+    text: string;
+  };
 };
 
 type RenderClipResult = {
@@ -166,6 +170,37 @@ function transcodeThreadCount() {
   return "0";
 }
 
+function escapeDrawtextText(value: string) {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/:/g, "\\:")
+    .replace(/'/g, "\\'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function videoFilter(input: RenderClipInput) {
+  const filters = ["scale='min(1080,iw)':-2"];
+
+  if (input.watermark?.enabled) {
+    const text = escapeDrawtextText(input.watermark.text) || "Clip Farmer";
+    filters.push(
+      [
+        `drawtext=text='${text}'`,
+        "x=w-tw-24",
+        "y=h-th-24",
+        "fontsize=h/36",
+        "fontcolor=white@0.82",
+        "box=1",
+        "boxcolor=black@0.38",
+        "boxborderw=12",
+      ].join(":"),
+    );
+  }
+
+  return filters.join(",");
+}
+
 function fastCopyArgs(input: RenderClipInput) {
   return [
     ...baseClipArgs(input),
@@ -187,7 +222,7 @@ function transcodeArgs(input: RenderClipInput) {
     "-preset",
     "ultrafast",
     "-vf",
-    "scale='min(1080,iw)':-2",
+    videoFilter(input),
     "-pix_fmt",
     "yuv420p",
     "-crf",
@@ -261,6 +296,11 @@ export async function renderClip(input: RenderClipInput): Promise<RenderClipResu
         ? `Could not create clip output directory: ${error.message}`
         : "Could not create clip output directory.",
     );
+  }
+
+  if (input.watermark?.enabled) {
+    await runFfmpeg(ffmpegBinary, transcodeArgs(input));
+    return { previewReady: true, warning: null };
   }
 
   if (ffprobeBinary) {

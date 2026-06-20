@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { recordRenderUsage } from "@/lib/billing";
+import { getAccountEntitlements, shouldWatermarkClips } from "@/lib/entitlements";
 import { renderClip } from "@/lib/ffmpeg";
+import {
+  clipMediaExpiresAt,
+  isTemporaryMediaUnavailable,
+} from "@/lib/media-retention";
 import {
   deleteStoredMedia,
   ensureLocalReadableMedia,
@@ -34,7 +39,11 @@ export async function processRenderJob(jobId: string) {
     include: {
       clip: {
         include: {
-          project: true,
+          project: {
+            include: {
+              userAccount: true,
+            },
+          },
           video: true,
         },
       },
@@ -57,10 +66,9 @@ export async function processRenderJob(jobId: string) {
     return job;
   }
 
-  const renderSource = await getRenderSource(job.clip.video);
   const outputPath = job.clip.path;
 
-  if (!renderSource.source || !outputPath) {
+  if (!outputPath) {
     throw new Error("Render job is missing media paths.");
   }
 
@@ -78,12 +86,31 @@ export async function processRenderJob(jobId: string) {
     data: { status: "RENDERING", error: null },
   });
 
+  let renderSource: Awaited<ReturnType<typeof getRenderSource>> | null = null;
+
   try {
+    if (
+      isTemporaryMediaUnavailable(job.clip.video) ||
+      (!job.clip.video.path && !job.clip.video.objectKey)
+    ) {
+      throw new Error("The temporary source video has expired. Upload it again.");
+    }
+
+    renderSource = await getRenderSource(job.clip.video);
+
+    if (!renderSource.source) {
+      throw new Error("Render job is missing source media.");
+    }
+
     const renderResult = await renderClip({
       inputPath: renderSource.source,
       outputPath,
       startTime: job.clip.startTime,
       duration: job.clip.duration,
+      watermark: {
+        enabled: shouldWatermarkClips(job.clip.project.userAccount),
+        text: getAccountEntitlements(job.clip.project.userAccount).watermarkText,
+      },
     });
 
     await finalizeRenderedClip(outputPath, job.clip.objectKey ?? "");
@@ -94,7 +121,12 @@ export async function processRenderJob(jobId: string) {
     const [, updatedJob] = await prisma.$transaction([
       prisma.clip.update({
         where: { id: job.clipId },
-        data: { status: "READY", error: renderResult.warning },
+        data: {
+          status: "READY",
+          error: renderResult.warning,
+          mediaDeletedAt: null,
+          mediaExpiresAt: clipMediaExpiresAt(),
+        },
       }),
       prisma.renderJob.update({
         where: { id: job.id },
@@ -110,7 +142,7 @@ export async function processRenderJob(jobId: string) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message.slice(0, 1200) : "FFmpeg render failed.";
-    if (renderSource.cleanupPath) {
+    if (renderSource?.cleanupPath) {
       await deleteStoredMedia({ path: renderSource.cleanupPath }).catch(() => undefined);
     }
     await deleteStoredMedia({ path: outputPath }).catch(() => undefined);

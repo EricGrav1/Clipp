@@ -21,7 +21,9 @@ import { formatTime } from "@/lib/format";
 type VideoItem = {
   id: string;
   originalName: string;
-  url: string;
+  mediaDeletedAt: Date | string | null;
+  mediaExpiresAt: Date | string | null;
+  url: string | null;
   durationSeconds: number | null;
 };
 
@@ -218,6 +220,8 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
+  const hasUsableVideo = Boolean(video?.url);
+  const hasExpiredVideo = Boolean(video && !video.url);
 
   const selectedEndTime = useMemo(() => {
     if (!videoDuration) {
@@ -450,6 +454,11 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
       return;
     }
 
+    if (!video.url) {
+      setError("The temporary source video has expired. Upload it again.");
+      return;
+    }
+
     setError("");
     setIsCreating(true);
 
@@ -537,7 +546,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                 )}
                 {isUploading && uploadProgress !== null
                   ? `${uploadProgress}%`
-                  : video
+                  : hasUsableVideo
                     ? "Replant Video"
                     : "Plant Video"}
               </Button>
@@ -547,7 +556,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
 
           <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
             <section className="relative grid flex-1 animate-fade-in-up place-items-center overflow-hidden rounded-xl border border-border bg-black shadow-panel">
-              {video ? (
+              {video?.url ? (
                 <video
                   key={video.id}
                   ref={videoRef}
@@ -575,14 +584,17 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                   <div className="animate-fade-in-up">
                     <BearFarmer size={104} className="mx-auto mb-5 animate-bob" />
                     <p className="mb-2 text-xs font-bold uppercase tracking-wide text-primary">
-                      Empty field
+                      {hasExpiredVideo ? "Source expired" : "Empty field"}
                     </p>
                     <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
-                      Plant a video to begin
+                      {hasExpiredVideo
+                        ? "Plant the source again"
+                        : "Plant a video to begin"}
                     </h2>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                      Drop in an mp4, mov, or webm. Barnaby tracks the playhead and
-                      harvests clips from the exact timestamp.
+                      {hasExpiredVideo
+                        ? "Temporary source videos are removed after processing. Upload the source again to harvest more clips."
+                        : "Drop in an mp4, mov, or webm. Barnaby tracks the playhead and harvests clips from the exact timestamp."}
                     </p>
                   </div>
                 </div>
@@ -616,7 +628,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
               <ClipTimeline
                 clipStartTime={clipStartTime}
                 currentTime={currentTime}
-                disabled={!video || !videoDuration}
+                disabled={!video?.url || !videoDuration}
                 selectedDuration={selectedDuration}
                 videoDuration={videoDuration}
                 onSelectStart={seekToStart}
@@ -649,7 +661,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                     Custom seconds
                     <Input
                       className="h-10 w-32"
-                      disabled={!video || !videoDuration}
+                      disabled={!video?.url || !videoDuration}
                       inputMode="numeric"
                       min={1}
                       max={maxCustomDuration}
@@ -679,7 +691,7 @@ export function EditorWorkspace({ project }: { project: EditorProject }) {
                 </div>
                 <Button
                   disabled={
-                    !video ||
+                    !video?.url ||
                     isCreating ||
                     videoDuration <= 0 ||
                     actualClipDuration <= 0.05

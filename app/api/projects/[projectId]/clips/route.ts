@@ -3,6 +3,10 @@ import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription, requireRenderEntitlement } from "@/lib/billing";
 import { toClipDTO } from "@/lib/clip-dto";
+import {
+  clipMediaExpiresAt,
+  isTemporaryMediaUnavailable,
+} from "@/lib/media-retention";
 import { prisma } from "@/lib/prisma";
 import { deleteStoredMedia, prepareClipOutput } from "@/lib/storage";
 import {
@@ -59,6 +63,16 @@ export async function POST(
       throw new ValidationError("Upload a video before creating clips.");
     }
 
+    if (
+      isTemporaryMediaUnavailable(project.video) ||
+      (!project.video.path && !project.video.objectKey)
+    ) {
+      throw new ValidationError(
+        "The temporary source video has expired. Upload it again to create more clips.",
+        410,
+      );
+    }
+
     if (videoDuration <= 0) {
       throw new ValidationError("Video duration is not available yet.");
     }
@@ -90,6 +104,8 @@ export async function POST(
         path: outputPath,
         objectKey: clipOutput.objectKey,
         storageProvider: clipOutput.provider,
+        mediaDeletedAt: null,
+        mediaExpiresAt: clipMediaExpiresAt(),
       },
     });
     clipId = clip.id;

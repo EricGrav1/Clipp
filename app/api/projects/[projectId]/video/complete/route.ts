@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription } from "@/lib/billing";
+import { getAccountEntitlements } from "@/lib/entitlements";
+import { sourceMediaExpiresAt } from "@/lib/media-retention";
 import { prisma } from "@/lib/prisma";
 import { completeMultipartVideoUpload, deleteStoredMedia } from "@/lib/storage";
 import { assertVideoMetadata, ValidationError } from "@/lib/validation";
@@ -64,14 +66,17 @@ export async function POST(
     const account = await requireUserAccount();
     requireActiveSubscription(account);
     const body = await request.json().catch(() => ({}));
+    const entitlements = getAccountEntitlements(account);
     const metadata = assertVideoMetadata({
       fileName: body.originalName,
+      maxSizeBytes: entitlements.maxDirectVideoBytes,
       mimeType: body.mimeType,
       sizeBytes: body.sizeBytes,
     });
     const objectKey = assertUploadedObject(body.objectKey);
     const multipartUpload = assertMultipartUpload(body.multipartUpload);
     const fileName = objectKey.split("/").at(-1);
+    const mediaExpiresAt = sourceMediaExpiresAt();
 
     if (!fileName) {
       throw new ValidationError("Uploaded video object is invalid.");
@@ -115,6 +120,8 @@ export async function POST(
         objectKey,
         storageProvider: "r2",
         sizeBytes: BigInt(metadata.sizeBytes),
+        mediaDeletedAt: null,
+        mediaExpiresAt,
       },
       update: {
         originalName: metadata.fileName,
@@ -126,6 +133,8 @@ export async function POST(
         storageProvider: "r2",
         sizeBytes: BigInt(metadata.sizeBytes),
         durationSeconds: null,
+        mediaDeletedAt: null,
+        mediaExpiresAt,
       },
     });
 

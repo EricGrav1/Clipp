@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 const features = [
   "120 render minutes per month",
   "Unlimited projects while subscribed",
-  "Source videos and clips kept while subscribed",
-  "Download-ready MP4 exports",
+  "Temporary source processing",
+  "Watermarked MP4 exports",
   "Native share support where browsers allow it",
 ];
 

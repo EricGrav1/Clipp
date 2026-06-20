@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 import { requireUserAccount } from "@/lib/auth";
 import { requireActiveSubscription } from "@/lib/billing";
+import { sourceMediaExpiresAt } from "@/lib/media-retention";
 import { prisma } from "@/lib/prisma";
 import { deleteStoredMedia, storeUploadedVideo } from "@/lib/storage";
 import { assertVideoFile, getVideoExtension, ValidationError } from "@/lib/validation";
@@ -34,6 +35,7 @@ export async function POST(
 
     const extension = getVideoExtension(file.name);
     const storedVideo = await storeUploadedVideo(file, extension);
+    const mediaExpiresAt = sourceMediaExpiresAt();
 
     await Promise.all([
       deleteStoredMedia(project.video ?? {}),
@@ -53,6 +55,8 @@ export async function POST(
         objectKey: storedVideo.objectKey,
         storageProvider: storedVideo.provider,
         sizeBytes: BigInt(file.size),
+        mediaDeletedAt: null,
+        mediaExpiresAt,
       },
       update: {
         originalName: file.name,
@@ -64,6 +68,8 @@ export async function POST(
         storageProvider: storedVideo.provider,
         sizeBytes: BigInt(file.size),
         durationSeconds: null,
+        mediaDeletedAt: null,
+        mediaExpiresAt,
       },
     });
 

@@ -237,13 +237,17 @@ export function ClipsPane({
                 isReady &&
                 Boolean(clip.error?.startsWith("Preview unavailable"));
               const isProcessing =
-                clip.status !== "READY" && clip.status !== "FAILED";
+                clip.status !== "READY" &&
+                clip.status !== "FAILED" &&
+                clip.status !== "EXPIRED";
               const statusLabel =
                 clip.status === "READY"
                   ? "ripe"
                   : clip.status === "FAILED"
                     ? "wilted"
-                    : "growing";
+                    : clip.status === "EXPIRED"
+                      ? "expired"
+                      : "growing";
 
               return (
                 <article
@@ -282,7 +286,9 @@ export function ClipsPane({
                           ? "success"
                           : clip.status === "FAILED"
                             ? "danger"
-                            : "warning"
+                            : clip.status === "EXPIRED"
+                              ? "neutral"
+                              : "warning"
                       }
                       className={
                         isProcessing ? "animate-glow-pulse" : undefined

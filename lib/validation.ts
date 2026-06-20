@@ -93,10 +93,12 @@ export function assertVideoFile(file: File | null) {
 
 export function assertVideoMetadata({
   fileName,
+  maxSizeBytes = DIRECT_VIDEO_MAX_BYTES,
   mimeType,
   sizeBytes,
 }: {
   fileName: unknown;
+  maxSizeBytes?: number;
   mimeType: unknown;
   sizeBytes: unknown;
 }) {
@@ -113,7 +115,6 @@ export function assertVideoMetadata({
   }
 
   const bytes = Number(sizeBytes);
-  const maxSizeBytes = DIRECT_VIDEO_MAX_BYTES;
   if (!Number.isFinite(bytes) || bytes <= 0 || bytes > maxSizeBytes) {
     throw new ValidationError(
       `Video must be between 1 byte and ${formatGigabytes(maxSizeBytes)}.`,

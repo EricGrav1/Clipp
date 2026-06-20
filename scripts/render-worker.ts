@@ -1,9 +1,12 @@
 import { prisma } from "../lib/prisma";
+import { cleanupExpiredMedia } from "../lib/media-retention";
 import { processRenderJob } from "../lib/render-jobs";
 
 const pollMs = Number(process.env.RENDER_WORKER_POLL_MS ?? 1_000);
 const staleAfterMs = Number(process.env.RENDER_WORKER_STALE_AFTER_MS ?? 10 * 60 * 1_000);
+const cleanupPollMs = Number(process.env.MEDIA_CLEANUP_POLL_MS ?? 5 * 60 * 1_000);
 let isShuttingDown = false;
+let nextCleanupAt = 0;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,6 +38,8 @@ async function findNextRenderJob() {
 }
 
 async function processNextRenderJob() {
+  await maybeCleanupExpiredMedia();
+
   const job = await findNextRenderJob();
 
   if (!job) {
@@ -51,6 +56,25 @@ async function processNextRenderJob() {
   }
 
   return true;
+}
+
+async function maybeCleanupExpiredMedia() {
+  if (Date.now() < nextCleanupAt) {
+    return;
+  }
+
+  nextCleanupAt = Date.now() + cleanupPollMs;
+
+  try {
+    const result = await cleanupExpiredMedia();
+    const deletedCount = result.deletedClips + result.deletedVideos;
+
+    if (deletedCount > 0 || result.skippedVideos > 0) {
+      console.log("[render-worker] media cleanup", result);
+    }
+  } catch (error) {
+    console.error("[render-worker] media cleanup failed", error);
+  }
 }
 
 async function run() {
